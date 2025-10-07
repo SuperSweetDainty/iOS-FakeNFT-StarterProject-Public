@@ -18,6 +18,7 @@ class CatalogTableViewCell: UITableViewCell {
         image.contentMode = .scaleAspectFill
         image.clipsToBounds = true
         image.layer.cornerRadius = 12
+        image.backgroundColor = .gray
         image.translatesAutoresizingMaskIntoConstraints = false
         
         return image
@@ -27,7 +28,7 @@ class CatalogTableViewCell: UITableViewCell {
         let label = UILabel()
         label.font = UIFont.bodyBold
         label.textColor = .textPrimary
-        label.numberOfLines = 2
+        label.numberOfLines = 1
         label.translatesAutoresizingMaskIntoConstraints = false
         
         return label
@@ -42,7 +43,7 @@ class CatalogTableViewCell: UITableViewCell {
         
         return label
     }()
-
+    
     override init(style: UITableViewCell.CellStyle, reuseIdentifier: String?) {
         super.init(style: style, reuseIdentifier: reuseIdentifier)
         setupUI()
@@ -52,15 +53,26 @@ class CatalogTableViewCell: UITableViewCell {
         fatalError("init(coder:) has not been implemented")
     }
     
+    override func prepareForReuse() {
+        super.prepareForReuse()
+        catalogImageView.image = nil
+        nameLabel.text = nil
+        nftCountLabel.text = nil
+    }
+    
     // MARK: - Configuration
-        func configure(with name: String, nftCount: Int) {
-            nameLabel.text = name
-            nftCountLabel.text = "(\(nftCount))"
-            
-            // Заглушка для изображения
+    func configure(with collection: CatalogCollectionNft) {
+        nameLabel.text = collection.name
+        nftCountLabel.text = "(\(collection.nftCount))"
+        
+        if let imageURL = collection.imageURL {
+            catalogImageView.image = UIImage(named: imageURL)
+        } else {
+            // Заглушка по умолчанию
             catalogImageView.image = UIImage(systemName: "photo.on.rectangle")?
                 .withTintColor(.systemGray3, renderingMode: .alwaysOriginal)
         }
+    }
     
     private func setupUI(){
         configureView()
@@ -84,7 +96,6 @@ class CatalogTableViewCell: UITableViewCell {
             catalogImageView.leadingAnchor.constraint(equalTo: contentView.leadingAnchor, constant: 16),
             catalogImageView.trailingAnchor.constraint(equalTo: contentView.trailingAnchor, constant: -16),
             catalogImageView.topAnchor.constraint(equalTo: contentView.topAnchor, constant: 20),
-            catalogImageView.centerYAnchor.constraint(equalTo: contentView.centerYAnchor),
             
             //Name Label
             nameLabel.leadingAnchor.constraint(equalTo: contentView.leadingAnchor, constant: 16),
@@ -95,7 +106,6 @@ class CatalogTableViewCell: UITableViewCell {
             nftCountLabel.topAnchor.constraint(equalTo: catalogImageView.bottomAnchor, constant: 4)
         ])
     }
-
 }
 
 

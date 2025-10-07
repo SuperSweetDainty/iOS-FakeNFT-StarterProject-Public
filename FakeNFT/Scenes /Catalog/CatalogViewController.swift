@@ -6,6 +6,7 @@
 //
 
 import UIKit
+import ProgressHUD
 
 
 final class CatalogViewController: UIViewController {
@@ -25,11 +26,53 @@ final class CatalogViewController: UIViewController {
         return tableView
     }()
     
+    private lazy var emptyStateImageView: UIImageView = {
+        let imageView = UIImageView()
+        imageView.image = UIImage(resource: .emptyState)
+        imageView.translatesAutoresizingMaskIntoConstraints = false
+        
+        return imageView
+    }()
+    
+    private lazy var emptyStateTitleLabel: UILabel = {
+        let label = UILabel()
+        label.text = "Не удалось загрузить коллекции.\nПроверьте подключение к интернету"
+        label.font = UIFont.bodyRegular
+        label.textColor = .textPrimary
+        label.textAlignment = .center
+        label.numberOfLines = 0
+        label.translatesAutoresizingMaskIntoConstraints = false
+        return label
+    }()
+    
+    private lazy var retryButton: UIButton = {
+        let button = UIButton(type: .system)
+        button.setTitle("Попробовать снова", for: .normal)
+        button.titleLabel?.font = UIFont.bodyBold
+        button.addTarget(self, action: #selector(retryButtonTapped), for: .touchUpInside)
+        return button
+    }()
+    
+    private lazy var emptyStateStack: UIStackView = {
+        let stackView = UIStackView(arrangedSubviews: [emptyStateImageView, emptyStateTitleLabel, retryButton])
+        stackView.alignment = .center
+        stackView.axis = .vertical
+        stackView.spacing = 8
+        stackView.isHidden = true
+        stackView.translatesAutoresizingMaskIntoConstraints = false
+        
+        return stackView
+    }()
+    
+    // MARK: - Properties
+    private var collectionsNft: [CatalogCollectionNft] = []
+    
     
     // MARK: - Lifecycle
     override func viewDidLoad() {
         super.viewDidLoad()
         setupUI()
+        loadCollections()
     }
     
     private func setupNavigationBar(){
@@ -56,29 +99,94 @@ final class CatalogViewController: UIViewController {
     }
     
     private func addSubviews(){
-        view.addSubview(catalogTableView)
+        [catalogTableView, emptyStateStack].forEach { view.addSubview($0) }
     }
     
     private func setupConstraints(){
         NSLayoutConstraint.activate([
+            //Catalog TableView
             catalogTableView.topAnchor.constraint(equalTo: view.safeAreaLayoutGuide.topAnchor),
             catalogTableView.bottomAnchor.constraint(equalTo: view.safeAreaLayoutGuide.bottomAnchor),
             catalogTableView.leadingAnchor.constraint(equalTo: view.leadingAnchor),
-            catalogTableView.trailingAnchor.constraint(equalTo: view.trailingAnchor)
+            catalogTableView.trailingAnchor.constraint(equalTo: view.trailingAnchor),
+            
+            //Empty State ImageView
+            emptyStateImageView.heightAnchor.constraint(equalToConstant: 80),
+            emptyStateImageView.widthAnchor.constraint(equalToConstant: 80),
+            
+            // Empty State Stack
+            emptyStateStack.centerXAnchor.constraint(equalTo: view.safeAreaLayoutGuide.centerXAnchor),
+            emptyStateStack.topAnchor.constraint(equalTo: view.safeAreaLayoutGuide.topAnchor, constant: 331)
         ])
     }
+    
+    private func loadCollections() {
+            // Показываем индикатор загрузки
+            ProgressHUD.show()
+            
+            // Скрываем оба состояния на время загрузки
+            catalogTableView.isHidden = true
+            emptyStateStack.isHidden = true
+            
+            // Имитация сетевого запроса (2 секунды)
+            DispatchQueue.main.asyncAfter(deadline: .now() + 2) {
+                ProgressHUD.dismiss() // Скрываем индикатор
+//                
+//                // TODO: TEST 1 Успешная загрузка с данными
+//                self.collectionsNft = self.createMockCollections()
+//                self.showContentState()
+                
+                // TODO: TEST 2 Ошибка загрузки
+                 self.collectionsNft = []
+                 self.showEmptyState()
+            }
+        }
+    
+    private func showEmptyState() {
+           emptyStateStack.isHidden = false
+           catalogTableView.isHidden = true
+       }
+       
+       private func showContentState() {
+           emptyStateStack.isHidden = true
+           catalogTableView.isHidden = false
+           catalogTableView.reloadData()
+       }
+    
+    // MARK: - Mock
+        private func createMockCollections() -> [CatalogCollectionNft] {
+            return [
+                CatalogCollectionNft(id: "1", name: "Коллекция 1", nftCount: 5, imageURL: "collectionOne"),
+                CatalogCollectionNft(id: "2", name: "Коллекция 2", nftCount: 3,  imageURL: "collectionTwo"),
+                CatalogCollectionNft(id: "3", name: "Коллекция 3", nftCount: 7,  imageURL: "collectionThree"),
+                CatalogCollectionNft(id: "4", name: "Коллекция 4", nftCount: 2,  imageURL:  "collectionOne"),
+                CatalogCollectionNft(id: "5", name: "Коллекция 5", nftCount: 8,  imageURL: "collectionThree")
+            ]
+        }
     
                                          
     //MARK: - Actions
     @objc private func didTappedSortButton(){
-            //TODO: вернусь позже
+        let alertSort = UIAlertController(title: "Сортировка", message: nil, preferredStyle: .actionSheet)
+        alertSort.addAction(UIAlertAction(title: "По названию", style: .default) { _ in
+            //TODO: - добавить сортировку по название
+        })
+        alertSort.addAction(UIAlertAction(title: "По количеству NFT", style: .default) { _ in
+            //TODO: - добавить сортировку по название
+        })
+        alertSort.addAction(UIAlertAction(title: "Закрыть", style: .cancel))
+        present(alertSort, animated: true)
         }
+    
+    @objc private func retryButtonTapped() {
+        //TODO: - добавить логику
+    }
 }
 
 
 extension CatalogViewController: UITableViewDataSource {
     func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
-        return 5 // TODO: - тест
+        return collectionsNft.count // TODO: - тест
     }
     
     func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
@@ -89,17 +197,17 @@ extension CatalogViewController: UITableViewDataSource {
                     return UITableViewCell()
                 }
                 
-                // TODO: -Заглушка данных
-                let mockData = (name: "Коллекция \(indexPath.row + 1)", nftCount: indexPath.row * 3 + 1)
-                cell.configure(with: mockData.name, nftCount: mockData.nftCount)
-                
-                return cell
-            }
+        // TODO: - Заглушка данных
+        let collection = collectionsNft[indexPath.row]
+        cell.configure(with: collection)
+        
+        return cell
+    }
     }
 
 extension CatalogViewController: UITableViewDelegate {
     func tableView(_ tableView: UITableView, heightForRowAt indexPath: IndexPath) -> CGFloat {
-            return 156
+            return 179
         }
     
     func tableView(_ tableView: UITableView, didSelectRowAt indexPath: IndexPath) {
