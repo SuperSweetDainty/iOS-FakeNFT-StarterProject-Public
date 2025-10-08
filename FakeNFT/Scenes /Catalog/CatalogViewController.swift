@@ -10,6 +10,13 @@ import ProgressHUD
 
 
 final class CatalogViewController: UIViewController {
+    // MARK: - Private properties
+    private var collectionsNft: [CatalogCollectionNft] = []
+    private var currentSortOption: SortOption = .byName {
+        didSet {
+            applySorting()
+        }
+    }
     
     // MARK: - UI Elements
     
@@ -36,8 +43,19 @@ final class CatalogViewController: UIViewController {
     
     private lazy var emptyStateTitleLabel: UILabel = {
         let label = UILabel()
-        label.text = "Не удалось загрузить коллекции.\nПроверьте подключение к интернету"
-        label.font = UIFont.bodyRegular
+        label.text = "Не удалось загрузить коллекции"
+        label.font = UIFont.bodyBold
+        label.textColor = .textPrimary
+        label.textAlignment = .center
+        label.numberOfLines = 0
+        label.translatesAutoresizingMaskIntoConstraints = false
+        return label
+    }()
+    
+    private lazy var emptyStateMessageLabel: UILabel = {
+        let label = UILabel()
+        label.text = "проверьте подключение к интернету"
+        label.font = UIFont.caption1
         label.textColor = .textPrimary
         label.textAlignment = .center
         label.numberOfLines = 0
@@ -54,7 +72,7 @@ final class CatalogViewController: UIViewController {
     }()
     
     private lazy var emptyStateStack: UIStackView = {
-        let stackView = UIStackView(arrangedSubviews: [emptyStateImageView, emptyStateTitleLabel, retryButton])
+        let stackView = UIStackView(arrangedSubviews: [emptyStateImageView, emptyStateTitleLabel, emptyStateMessageLabel, retryButton])
         stackView.alignment = .center
         stackView.axis = .vertical
         stackView.spacing = 8
@@ -64,10 +82,6 @@ final class CatalogViewController: UIViewController {
         return stackView
     }()
     
-    // MARK: - Properties
-    private var collectionsNft: [CatalogCollectionNft] = []
-    
-    
     // MARK: - Lifecycle
     override func viewDidLoad() {
         super.viewDidLoad()
@@ -76,7 +90,6 @@ final class CatalogViewController: UIViewController {
     }
     
     private func setupNavigationBar(){
-        
         let sortButton = UIBarButtonItem(
                    image: UIImage(named: "sortButtonImage") ?? UIImage(systemName: "arrow.up.arrow.down"),
                    style: .plain,
@@ -124,7 +137,6 @@ final class CatalogViewController: UIViewController {
             // Показываем индикатор загрузки
             ProgressHUD.show()
             
-            // Скрываем оба состояния на время загрузки
             catalogTableView.isHidden = true
             emptyStateStack.isHidden = true
             
@@ -133,12 +145,12 @@ final class CatalogViewController: UIViewController {
                 ProgressHUD.dismiss() // Скрываем индикатор
 //                
 //                // TODO: TEST 1 Успешная загрузка с данными
-//                self.collectionsNft = self.createMockCollections()
-//                self.showContentState()
+                self.collectionsNft = self.createMockCollections()
+                self.showContentState()
                 
-                // TODO: TEST 2 Ошибка загрузки
-                 self.collectionsNft = []
-                 self.showEmptyState()
+//                // TODO: TEST 2 Ошибка загрузки
+//                 self.collectionsNft = []
+//                 self.showEmptyState()
             }
         }
     
@@ -152,6 +164,11 @@ final class CatalogViewController: UIViewController {
            catalogTableView.isHidden = false
            catalogTableView.reloadData()
        }
+    
+    private func applySorting() {
+        collectionsNft = currentSortOption.sortCollections(collectionsNft)
+        catalogTableView.reloadData()
+    }
     
     // MARK: - Mock
         private func createMockCollections() -> [CatalogCollectionNft] {
@@ -169,10 +186,10 @@ final class CatalogViewController: UIViewController {
     @objc private func didTappedSortButton(){
         let alertSort = UIAlertController(title: "Сортировка", message: nil, preferredStyle: .actionSheet)
         alertSort.addAction(UIAlertAction(title: "По названию", style: .default) { _ in
-            //TODO: - добавить сортировку по название
+            self.currentSortOption = .byName
         })
         alertSort.addAction(UIAlertAction(title: "По количеству NFT", style: .default) { _ in
-            //TODO: - добавить сортировку по название
+            self.currentSortOption = .byNftCount
         })
         alertSort.addAction(UIAlertAction(title: "Закрыть", style: .cancel))
         present(alertSort, animated: true)
