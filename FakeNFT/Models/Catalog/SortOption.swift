@@ -11,6 +11,20 @@ enum SortOption: String, CaseIterable {
     case byName = "По названию"
     case byNftCount = "По колличеству NFT"
     
+    var title: String { return self.rawValue}
+    
+    func save(){
+        UserDefaults.standard.set(self.rawValue, forKey: "catalogSortOption")
+    }
+    
+    static func load() -> SortOption {
+        guard let saveValue = UserDefaults.standard.string(forKey: "catalogSortOption"),
+              let option = SortOption(rawValue: saveValue) else {
+            return .byName
+        }
+        return option
+    }
+    
     func sortCollections(_ collections: [CatalogCollectionNft]) -> [CatalogCollectionNft] {
         switch self {
         case .byName:
@@ -18,9 +32,5 @@ enum SortOption: String, CaseIterable {
         case .byNftCount:
             return collections.sorted {$0.nftCount > $1.nftCount}
         }
-    }
-    
-    static var allCases: [SortOption] {
-        return [.byName, .byNftCount]
     }
 }

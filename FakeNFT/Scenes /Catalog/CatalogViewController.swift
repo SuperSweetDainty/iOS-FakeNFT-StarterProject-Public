@@ -14,6 +14,7 @@ final class CatalogViewController: UIViewController {
     private var collectionsNft: [CatalogCollectionNft] = []
     private var currentSortOption: SortOption = .byName {
         didSet {
+            currentSortOption.save()
             applySorting()
         }
     }
@@ -86,18 +87,19 @@ final class CatalogViewController: UIViewController {
     override func viewDidLoad() {
         super.viewDidLoad()
         setupUI()
+        currentSortOption = SortOption.load()
         loadCollections()
     }
     
     private func setupNavigationBar(){
         let sortButton = UIBarButtonItem(
-                   image: UIImage(named: "sortButtonImage") ?? UIImage(systemName: "arrow.up.arrow.down"),
-                   style: .plain,
-                   target: self,
-                   action: #selector(didTappedSortButton)
-               )
-               sortButton.tintColor = .black
-               navigationItem.rightBarButtonItem = sortButton
+            image: UIImage(named: "sortButtonImage") ?? UIImage(systemName: "arrow.up.arrow.down"),
+            style: .plain,
+            target: self,
+            action: #selector(didTappedSortButton)
+        )
+        sortButton.tintColor = .black
+        navigationItem.rightBarButtonItem = sortButton
     }
     
     private func setupUI(){
@@ -134,36 +136,36 @@ final class CatalogViewController: UIViewController {
     }
     
     private func loadCollections() {
-            // Показываем индикатор загрузки
-            ProgressHUD.show()
+        // Показываем индикатор загрузки
+        ProgressHUD.show()
+        
+        catalogTableView.isHidden = true
+        emptyStateStack.isHidden = true
+        
+        // Имитация сетевого запроса (2 секунды)
+        DispatchQueue.main.asyncAfter(deadline: .now() + 2) {
+            ProgressHUD.dismiss() // Скрываем индикатор
+            //
+            //                // TODO: TEST 1 Успешная загрузка с данными
+            self.collectionsNft = self.createMockCollections()
+            self.showContentState()
             
-            catalogTableView.isHidden = true
-            emptyStateStack.isHidden = true
-            
-            // Имитация сетевого запроса (2 секунды)
-            DispatchQueue.main.asyncAfter(deadline: .now() + 2) {
-                ProgressHUD.dismiss() // Скрываем индикатор
-//                
-//                // TODO: TEST 1 Успешная загрузка с данными
-                self.collectionsNft = self.createMockCollections()
-                self.showContentState()
-                
-//                // TODO: TEST 2 Ошибка загрузки
-//                 self.collectionsNft = []
-//                 self.showEmptyState()
-            }
+            //                // TODO: TEST 2 Ошибка загрузки
+            //                 self.collectionsNft = []
+            //                 self.showEmptyState()
         }
+    }
     
     private func showEmptyState() {
-           emptyStateStack.isHidden = false
-           catalogTableView.isHidden = true
-       }
-       
-       private func showContentState() {
-           emptyStateStack.isHidden = true
-           catalogTableView.isHidden = false
-           catalogTableView.reloadData()
-       }
+        emptyStateStack.isHidden = false
+        catalogTableView.isHidden = true
+    }
+    
+    private func showContentState() {
+        emptyStateStack.isHidden = true
+        catalogTableView.isHidden = false
+        catalogTableView.reloadData()
+    }
     
     private func applySorting() {
         collectionsNft = currentSortOption.sortCollections(collectionsNft)
@@ -171,29 +173,33 @@ final class CatalogViewController: UIViewController {
     }
     
     // MARK: - Mock
-        private func createMockCollections() -> [CatalogCollectionNft] {
-            return [
-                CatalogCollectionNft(id: "1", name: "Коллекция 1", nftCount: 5, imageURL: "collectionOne"),
-                CatalogCollectionNft(id: "2", name: "Коллекция 2", nftCount: 3,  imageURL: "collectionTwo"),
-                CatalogCollectionNft(id: "3", name: "Коллекция 3", nftCount: 7,  imageURL: "collectionThree"),
-                CatalogCollectionNft(id: "4", name: "Коллекция 4", nftCount: 2,  imageURL:  "collectionOne"),
-                CatalogCollectionNft(id: "5", name: "Коллекция 5", nftCount: 8,  imageURL: "collectionThree")
-            ]
-        }
+    private func createMockCollections() -> [CatalogCollectionNft] {
+        return [
+            CatalogCollectionNft(id: "1", name: "Коллекция 1", nftCount: 5, imageURL: "collectionOne"),
+            CatalogCollectionNft(id: "2", name: "Коллекция 2", nftCount: 3,  imageURL: "collectionTwo"),
+            CatalogCollectionNft(id: "3", name: "Коллекция 3", nftCount: 7,  imageURL: "collectionThree"),
+            CatalogCollectionNft(id: "4", name: "Коллекция 4", nftCount: 2,  imageURL:  "collectionOne"),
+            CatalogCollectionNft(id: "5", name: "Коллекция 5", nftCount: 8,  imageURL: "collectionThree")
+        ]
+    }
     
-                                         
+    
     //MARK: - Actions
     @objc private func didTappedSortButton(){
         let alertSort = UIAlertController(title: "Сортировка", message: nil, preferredStyle: .actionSheet)
-        alertSort.addAction(UIAlertAction(title: "По названию", style: .default) { _ in
-            self.currentSortOption = .byName
-        })
-        alertSort.addAction(UIAlertAction(title: "По количеству NFT", style: .default) { _ in
-            self.currentSortOption = .byNftCount
-        })
+        
+        for option in SortOption.allCases {
+            alertSort.addAction(UIAlertAction(
+                title: option.title,
+                style: .default
+            ) { [weak self] _ in
+                self?.currentSortOption = option
+            })
+        }
+        
         alertSort.addAction(UIAlertAction(title: "Закрыть", style: .cancel))
         present(alertSort, animated: true)
-        }
+    }
     
     @objc private func retryButtonTapped() {
         //TODO: - добавить логику
@@ -209,23 +215,23 @@ extension CatalogViewController: UITableViewDataSource {
     func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
         guard let cell = tableView.dequeueReusableCell(
             withIdentifier: CatalogTableViewCell.reuseIdentifier,
-                    for: indexPath
-                ) as? CatalogTableViewCell else {
-                    return UITableViewCell()
-                }
-                
+            for: indexPath
+        ) as? CatalogTableViewCell else {
+            return UITableViewCell()
+        }
+        
         // TODO: - Заглушка данных
         let collection = collectionsNft[indexPath.row]
         cell.configure(with: collection)
         
         return cell
     }
-    }
+}
 
 extension CatalogViewController: UITableViewDelegate {
     func tableView(_ tableView: UITableView, heightForRowAt indexPath: IndexPath) -> CGFloat {
-            return 179
-        }
+        return 179
+    }
     
     func tableView(_ tableView: UITableView, didSelectRowAt indexPath: IndexPath) {
         tableView.deselectRow(at: indexPath, animated: true)
