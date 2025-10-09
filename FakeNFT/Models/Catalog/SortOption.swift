@@ -13,16 +13,16 @@ enum SortOption: String, CaseIterable {
     
     var title: String { return self.rawValue}
     
-    func save(){
-        UserDefaults.standard.set(self.rawValue, forKey: "catalogSortOption")
-    }
-    
     static func load() -> SortOption {
         guard let saveValue = UserDefaults.standard.string(forKey: "catalogSortOption"),
               let option = SortOption(rawValue: saveValue) else {
             return .byName
         }
         return option
+    }
+    
+    func save(){
+        UserDefaults.standard.set(self.rawValue, forKey: "catalogSortOption")
     }
     
     func sortCollections(_ collections: [CatalogCollectionNft]) -> [CatalogCollectionNft] {

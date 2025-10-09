@@ -20,7 +20,7 @@ protocol CatalogViewControllerProtocol: AnyObject {
 
 final class CatalogViewController: UIViewController, CatalogViewControllerProtocol, ErrorView {
     //MARK: - Public Properties
-    var presenter: CatalogViewPresenterProtocol!
+    var presenter: CatalogViewPresenterProtocol?
     
     // MARK: - UI Elements
     private lazy var catalogTableView: UITableView = {
@@ -89,9 +89,9 @@ final class CatalogViewController: UIViewController, CatalogViewControllerProtoc
     override func viewDidLoad() {
         super.viewDidLoad()
         presenter = CatalogViewPresenter()
-        presenter.view = self
+        presenter?.view = self
         setupUI()
-        presenter.viewDidLoad()
+        presenter?.viewDidLoad()
     }
     
     //MARK: - IB Actions
@@ -103,7 +103,7 @@ final class CatalogViewController: UIViewController, CatalogViewControllerProtoc
                 title: option.title,
                 style: .default
             ) { [weak self] _ in
-                self?.presenter.didSelectSortOption(option)
+                self?.presenter?.didSelectSortOption(option)
             })
         }
         
@@ -112,7 +112,7 @@ final class CatalogViewController: UIViewController, CatalogViewControllerProtoc
     }
     
     @objc private func retryButtonTapped() {
-        presenter.didTapRetry()
+        presenter?.didTapRetry()
     }
     
     //MARK: - Public Methods
@@ -137,7 +137,7 @@ final class CatalogViewController: UIViewController, CatalogViewControllerProtoc
             message: "Нет подключения к интернету",
             actionText: "Попробовать снова",
             action: { [weak self] in
-                self?.presenter.didTapRetry()
+                self?.presenter?.didTapRetry()
             }
         )
         showError(errorModel)
@@ -213,7 +213,7 @@ final class CatalogViewController: UIViewController, CatalogViewControllerProtoc
 // MARK: - UITableViewDataSource
 extension CatalogViewController: UITableViewDataSource {
     func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
-        return presenter.collectionsCount // TODO: - тест
+         presenter?.collectionsCount ?? 0
     }
     
     func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
@@ -225,6 +225,11 @@ extension CatalogViewController: UITableViewDataSource {
         }
         
         // TODO: - Заглушка данных
+        guard let presenter = presenter,
+              indexPath.row < presenter.collectionsCount else {
+            return cell
+        }
+        
         let collection = presenter.collection(at: indexPath.row)
         cell.configure(with: collection)
         
@@ -235,11 +240,11 @@ extension CatalogViewController: UITableViewDataSource {
 // MARK: - UITableViewDelegate
 extension CatalogViewController: UITableViewDelegate {
     func tableView(_ tableView: UITableView, heightForRowAt indexPath: IndexPath) -> CGFloat {
-        return 179
+        179
     }
     
     func tableView(_ tableView: UITableView, didSelectRowAt indexPath: IndexPath) {
         tableView.deselectRow(at: indexPath, animated: true)
-        presenter.didSelectCollection(at: indexPath.row)
+        presenter?.didSelectCollection(at: indexPath.row)
     }
 }

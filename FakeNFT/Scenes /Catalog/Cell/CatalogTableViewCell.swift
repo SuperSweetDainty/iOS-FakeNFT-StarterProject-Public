@@ -38,7 +38,7 @@ class CatalogTableViewCell: UITableViewCell {
         let label = UILabel()
         label.font = UIFont.bodyBold
         label.textColor = .textPrimary
-        label.numberOfLines = 2
+        label.numberOfLines = 1
         label.translatesAutoresizingMaskIntoConstraints = false
         
         return label
@@ -76,7 +76,7 @@ class CatalogTableViewCell: UITableViewCell {
         }
     }
     
-    // MARK: - Private Methods
+    // MARK: - Public Methods
     private func setupUI(){
         configureView()
         addSubviews()
@@ -103,10 +103,12 @@ class CatalogTableViewCell: UITableViewCell {
             //Name Label
             nameLabel.leadingAnchor.constraint(equalTo: contentView.leadingAnchor, constant: 16),
             nameLabel.topAnchor.constraint(equalTo: catalogImageView.bottomAnchor, constant: 4),
+            nameLabel.bottomAnchor.constraint(equalTo: contentView.bottomAnchor),
             
             //nftCount Label
             nftCountLabel.leadingAnchor.constraint(equalTo: nameLabel.trailingAnchor, constant: 4),
-            nftCountLabel.topAnchor.constraint(equalTo: catalogImageView.bottomAnchor, constant: 4)
+            nftCountLabel.topAnchor.constraint(equalTo: catalogImageView.bottomAnchor, constant: 4),
+            nftCountLabel.bottomAnchor.constraint(equalTo: contentView.bottomAnchor)
         ])
     }
 }

@@ -18,7 +18,7 @@ protocol CatalogViewPresenterProtocol: AnyObject {
     func collection(at index: Int) -> CatalogCollectionNft
 }
 
-class CatalogViewPresenter: CatalogViewPresenterProtocol {
+final class CatalogViewPresenter: CatalogViewPresenterProtocol {
     //MARK: - Public Properties
     weak var view: CatalogViewControllerProtocol?
     var collectionsCount: Int {
