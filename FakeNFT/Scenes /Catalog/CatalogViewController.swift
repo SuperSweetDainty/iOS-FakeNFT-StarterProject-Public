@@ -8,19 +8,21 @@
 import UIKit
 import ProgressHUD
 
+protocol CatalogViewControllerProtocol: AnyObject {
+    func displayCollections(_ collections: [CatalogCollectionNft])
+    func showLoading()
+    func hideLoading()
+    func showError(_ message: String)
+    func showEmptyState()
+    func navigateToCollectionDetail(collectionId: String)
+}
 
-final class CatalogViewController: UIViewController, ErrorView {
-    // MARK: - Private properties
-    private var collectionsNft: [CatalogCollectionNft] = []
-    private var currentSortOption: SortOption = .byName {
-        didSet {
-            currentSortOption.save()
-            applySorting()
-        }
-    }
-        
-    // MARK: - UI Elements
+
+final class CatalogViewController: UIViewController, CatalogViewControllerProtocol, ErrorView {
+    //MARK: - Public Properties
+    var presenter: CatalogViewPresenterProtocol!
     
+    // MARK: - UI Elements
     private lazy var catalogTableView: UITableView = {
         let tableView = UITableView()
         tableView.register(CatalogTableViewCell.self, forCellReuseIdentifier: "CatalogTableViewCell")
@@ -86,11 +88,72 @@ final class CatalogViewController: UIViewController, ErrorView {
     // MARK: - Lifecycle
     override func viewDidLoad() {
         super.viewDidLoad()
+        presenter = CatalogViewPresenter()
+        presenter.view = self
         setupUI()
-        currentSortOption = SortOption.load()
-        loadCollections()
+        presenter.viewDidLoad()
     }
     
+    //MARK: - IB Actions
+    @objc private func didTappedSortButton(){
+        let alertSort = UIAlertController(title: "Сортировка", message: nil, preferredStyle: .actionSheet)
+        
+        for option in SortOption.allCases {
+            alertSort.addAction(UIAlertAction(
+                title: option.title,
+                style: .default
+            ) { [weak self] _ in
+                self?.presenter.didSelectSortOption(option)
+            })
+        }
+        
+        alertSort.addAction(UIAlertAction(title: "Закрыть", style: .cancel))
+        present(alertSort, animated: true)
+    }
+    
+    @objc private func retryButtonTapped() {
+        presenter.didTapRetry()
+    }
+    
+    //MARK: - Public Methods
+    func displayCollections(_ collections: [CatalogCollectionNft]) {
+        catalogTableView.reloadData()
+        showContentState()
+    }
+    
+    func showLoading(){
+        ProgressHUD.show()
+        
+        catalogTableView.isHidden = true
+        emptyStateStack.isHidden = true
+    }
+    
+    func hideLoading() {
+        ProgressHUD.dismiss()
+    }
+    
+    func showError(_ message: String){
+        let errorModel = ErrorModel(
+            message: "Нет подключения к интернету",
+            actionText: "Попробовать снова",
+            action: { [weak self] in
+                self?.presenter.didTapRetry()
+            }
+        )
+        showError(errorModel)
+    }
+    
+    func showEmptyState() {
+        emptyStateStack.isHidden = false
+        catalogTableView.isHidden = true
+    }
+    
+    func navigateToCollectionDetail(collectionId: String) {
+        let detailVC = CatalogCollectionViewController(collectionId: collectionId)
+        navigationController?.pushViewController(detailVC, animated: true)
+    }
+    
+    // MARK: - Private Methods
     private func setupNavigationBar(){
         let sortButton = UIBarButtonItem(
             image: UIImage(named: "sortButtonImage") ?? UIImage(systemName: "arrow.up.arrow.down"),
@@ -135,106 +198,22 @@ final class CatalogViewController: UIViewController, ErrorView {
         ])
     }
     
-    private func loadCollections() {
-        // Показываем индикатор загрузки
-        ProgressHUD.show()
-        
-        catalogTableView.isHidden = true
-        emptyStateStack.isHidden = true
-        
-        // Имитация сетевого запроса (2 секунды)
-        DispatchQueue.main.asyncAfter(deadline: .now() + 2) {
-            ProgressHUD.dismiss() // Скрываем индикатор
-            
-            let shouldFail = false // Для теста ошибка true
-            
-            if shouldFail {
-                self.showNetworkError()
-            } else {
-                self.collectionsNft = self.createMockCollections()
-                self.applySorting()
-                self.showContentState()
-            }
-            
-            //                // TODO: TEST  Ошибка загрузки
-            //                 self.collectionsNft = []
-            //                 self.showEmptyState()
-        }
-    }
-    
-    private func showNetworkError(){
-        let errorModel = ErrorModel(
-            message: "Не удалось загрузить коллекцию. Проверьте подключение к интернету.",
-            actionText: "Попробовать сново",
-            action: {[weak self] in
-                self?.loadCollections()
-            })
-        showError(errorModel)
-    }
-    
-    private func showEmptyState() {
-        emptyStateStack.isHidden = false
-        catalogTableView.isHidden = true
-        catalogTableView.reloadData()
-    }
-    
     private func showContentState() {
         emptyStateStack.isHidden = true
         catalogTableView.isHidden = false
         catalogTableView.reloadData()
     }
     
-    private func applySorting() {
-        collectionsNft = currentSortOption.sortCollections(collectionsNft)
-        catalogTableView.reloadData()
-    }
-    
-    private func showCollectionDetail(at index: Int) {
-         guard collectionsNft.indices.contains(index) else { return }
-         
-         let collection = collectionsNft[index]
-         let collectionVC = CatalogCollectionViewController(collectionId: collection.id)
-         navigationController?.pushViewController(collectionVC, animated: true)
-     }
-    
-    // MARK: - Mock
-    private func createMockCollections() -> [CatalogCollectionNft] {
-        return [
-            CatalogCollectionNft(id: "1", name: "Коллекция 1", nftCount: 5, imageURL: "collectionOne"),
-            CatalogCollectionNft(id: "2", name: "Коллекция 2", nftCount: 3,  imageURL: "collectionTwo"),
-            CatalogCollectionNft(id: "3", name: "Коллекция 3", nftCount: 7,  imageURL: "collectionThree"),
-            CatalogCollectionNft(id: "4", name: "Коллекция 4", nftCount: 2,  imageURL:  "collectionOne"),
-            CatalogCollectionNft(id: "5", name: "Коллекция 5", nftCount: 8,  imageURL: "collectionThree")
-        ]
-    }
-    
-    
-    //MARK: - Actions
-    @objc private func didTappedSortButton(){
-        let alertSort = UIAlertController(title: "Сортировка", message: nil, preferredStyle: .actionSheet)
-        
-        for option in SortOption.allCases {
-            alertSort.addAction(UIAlertAction(
-                title: option.title,
-                style: .default
-            ) { [weak self] _ in
-                self?.currentSortOption = option
-            })
-        }
-        
-        alertSort.addAction(UIAlertAction(title: "Закрыть", style: .cancel))
-        present(alertSort, animated: true)
-    }
-    
-    @objc private func retryButtonTapped() {
-        loadCollections()
+    private func showCollectionDetail(collectionId: String) {
+        let collectionVC = CatalogCollectionViewController(collectionId: collectionId)
+        navigationController?.pushViewController(collectionVC, animated: true)
     }
 }
 
-
+// MARK: - UITableViewDataSource
 extension CatalogViewController: UITableViewDataSource {
     func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
-        return collectionsNft.count // TODO: - тест
+        return presenter.collectionsCount // TODO: - тест
     }
     
     func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
@@ -246,13 +225,14 @@ extension CatalogViewController: UITableViewDataSource {
         }
         
         // TODO: - Заглушка данных
-        let collection = collectionsNft[indexPath.row]
+        let collection = presenter.collection(at: indexPath.row)
         cell.configure(with: collection)
         
         return cell
     }
 }
 
+// MARK: - UITableViewDelegate
 extension CatalogViewController: UITableViewDelegate {
     func tableView(_ tableView: UITableView, heightForRowAt indexPath: IndexPath) -> CGFloat {
         return 179
@@ -260,9 +240,6 @@ extension CatalogViewController: UITableViewDelegate {
     
     func tableView(_ tableView: UITableView, didSelectRowAt indexPath: IndexPath) {
         tableView.deselectRow(at: indexPath, animated: true)
-        
-        showCollectionDetail(at: indexPath.row)
-        print("Selected collection at index: \(indexPath.row)")
+        presenter.didSelectCollection(at: indexPath.row)
     }
 }
-

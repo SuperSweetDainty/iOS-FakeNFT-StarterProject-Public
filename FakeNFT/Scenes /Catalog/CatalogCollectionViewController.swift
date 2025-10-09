@@ -10,7 +10,7 @@ import UIKit
 
 final class CatalogCollectionViewController: UIViewController {
     
-    // MARK: - Properties
+    // MARK: - Private Properties
     private let collectionId: String
     
     // MARK: - Init

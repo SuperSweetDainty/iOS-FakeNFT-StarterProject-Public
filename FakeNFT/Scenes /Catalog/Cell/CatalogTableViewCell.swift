@@ -44,6 +44,7 @@ class CatalogTableViewCell: UITableViewCell {
         return label
     }()
     
+    //MARK: - Initializers
     override init(style: UITableViewCell.CellStyle, reuseIdentifier: String?) {
         super.init(style: style, reuseIdentifier: reuseIdentifier)
         setupUI()
@@ -53,6 +54,7 @@ class CatalogTableViewCell: UITableViewCell {
         fatalError("init(coder:) has not been implemented")
     }
     
+    //MARK: - Overrides Methods
     override func prepareForReuse() {
         super.prepareForReuse()
         catalogImageView.image = nil
@@ -60,7 +62,7 @@ class CatalogTableViewCell: UITableViewCell {
         nftCountLabel.text = nil
     }
     
-    // MARK: - Configuration
+    // MARK: - Public Methods
     func configure(with collection: CatalogCollectionNft) {
         nameLabel.text = collection.name
         nftCountLabel.text = "(\(collection.nftCount))"
@@ -74,6 +76,7 @@ class CatalogTableViewCell: UITableViewCell {
         }
     }
     
+    // MARK: - Private Methods
     private func setupUI(){
         configureView()
         addSubviews()
