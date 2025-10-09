@@ -9,7 +9,7 @@ import UIKit
 import ProgressHUD
 
 
-final class CatalogViewController: UIViewController {
+final class CatalogViewController: UIViewController, ErrorView {
     // MARK: - Private properties
     private var collectionsNft: [CatalogCollectionNft] = []
     private var currentSortOption: SortOption = .byName {
@@ -18,7 +18,7 @@ final class CatalogViewController: UIViewController {
             applySorting()
         }
     }
-    
+        
     // MARK: - UI Elements
     
     private lazy var catalogTableView: UITableView = {
@@ -44,7 +44,7 @@ final class CatalogViewController: UIViewController {
     
     private lazy var emptyStateTitleLabel: UILabel = {
         let label = UILabel()
-        label.text = "Не удалось загрузить коллекции"
+        label.text = "Коллекций пока нету"
         label.font = UIFont.bodyBold
         label.textColor = .textPrimary
         label.textAlignment = .center
@@ -55,7 +55,7 @@ final class CatalogViewController: UIViewController {
     
     private lazy var emptyStateMessageLabel: UILabel = {
         let label = UILabel()
-        label.text = "проверьте подключение к интернету"
+        label.text = "попробуйте позже или обновите коллекцию"
         label.font = UIFont.caption1
         label.textColor = .textPrimary
         label.textAlignment = .center
@@ -130,8 +130,8 @@ final class CatalogViewController: UIViewController {
             emptyStateImageView.widthAnchor.constraint(equalToConstant: 80),
             
             // Empty State Stack
-            emptyStateStack.centerXAnchor.constraint(equalTo: view.safeAreaLayoutGuide.centerXAnchor),
-            emptyStateStack.topAnchor.constraint(equalTo: view.safeAreaLayoutGuide.topAnchor, constant: 331)
+            emptyStateStack.centerXAnchor.constraint(equalTo: view.centerXAnchor),
+            emptyStateStack.centerYAnchor.constraint(equalTo: view.centerYAnchor)
         ])
     }
     
@@ -145,20 +145,37 @@ final class CatalogViewController: UIViewController {
         // Имитация сетевого запроса (2 секунды)
         DispatchQueue.main.asyncAfter(deadline: .now() + 2) {
             ProgressHUD.dismiss() // Скрываем индикатор
-            //
-            //                // TODO: TEST 1 Успешная загрузка с данными
-            self.collectionsNft = self.createMockCollections()
-            self.showContentState()
             
-            //                // TODO: TEST 2 Ошибка загрузки
+            let shouldFail = false // Для теста ошибка true
+            
+            if shouldFail {
+                self.showNetworkError()
+            } else {
+                self.collectionsNft = self.createMockCollections()
+                self.applySorting()
+                self.showContentState()
+            }
+            
+            //                // TODO: TEST  Ошибка загрузки
             //                 self.collectionsNft = []
             //                 self.showEmptyState()
         }
     }
     
+    private func showNetworkError(){
+        let errorModel = ErrorModel(
+            message: "Не удалось загрузить коллекцию. Проверьте подключение к интернету.",
+            actionText: "Попробовать сново",
+            action: {[weak self] in
+                self?.loadCollections()
+            })
+        showError(errorModel)
+    }
+    
     private func showEmptyState() {
         emptyStateStack.isHidden = false
         catalogTableView.isHidden = true
+        catalogTableView.reloadData()
     }
     
     private func showContentState() {
@@ -171,6 +188,14 @@ final class CatalogViewController: UIViewController {
         collectionsNft = currentSortOption.sortCollections(collectionsNft)
         catalogTableView.reloadData()
     }
+    
+    private func showCollectionDetail(at index: Int) {
+         guard collectionsNft.indices.contains(index) else { return }
+         
+         let collection = collectionsNft[index]
+         let collectionVC = CatalogCollectionViewController(collectionId: collection.id)
+         navigationController?.pushViewController(collectionVC, animated: true)
+     }
     
     // MARK: - Mock
     private func createMockCollections() -> [CatalogCollectionNft] {
@@ -202,7 +227,7 @@ final class CatalogViewController: UIViewController {
     }
     
     @objc private func retryButtonTapped() {
-        //TODO: - добавить логику
+        loadCollections()
     }
 }
 
@@ -236,7 +261,7 @@ extension CatalogViewController: UITableViewDelegate {
     func tableView(_ tableView: UITableView, didSelectRowAt indexPath: IndexPath) {
         tableView.deselectRow(at: indexPath, animated: true)
         
-        //TODO: - добавить тап по коллекции
+        showCollectionDetail(at: indexPath.row)
         print("Selected collection at index: \(indexPath.row)")
     }
 }
