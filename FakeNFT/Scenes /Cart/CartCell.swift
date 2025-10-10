@@ -87,15 +87,20 @@ final class CartCell: UITableViewCell {
     }
     
     func setupCell(with nft: Nft, delegate: CellCartProtocol) {
-        guard nft.images.count > 2 else { return }
         self.delegate = delegate
         id = nft.id
         nameLabel.text = nft.name
         priceLabel.text = "\(nft.price) ETH"
-        nftImageView.kf.setImage(with: nft.images[0])
+        
+        if let firstImageURL = nft.images.first {
+            nftImageView.kf.setImage(with: firstImageURL)
+        } else {
+            nftImageView.image = UIImage(named: "placeholder")
+        }
         
         for (index, imageView) in starImageViews.enumerated() {
-            imageView.tintColor = index < nft.rating ? .yellowUniversal : .segmentInactive
+            let isActive = index < nft.rating && nft.rating > 0
+            imageView.tintColor = isActive ? .yellowUniversal : .segmentActive
         }
     }
     

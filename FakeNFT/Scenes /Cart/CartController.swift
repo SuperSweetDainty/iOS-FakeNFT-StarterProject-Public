@@ -7,9 +7,9 @@
 
 import UIKit
 
-class CartController: UIViewController, UpdateCartProtocol {
+final class CartController: UIViewController, UpdateCartProtocol {
     // MARK: - Properties
-    private var privateNfts: [Nft] = []
+    private var arrayNfts: [Nft] = []
     private var presenter: PresenterCartProtocol?
     
     private lazy var tableView: UITableView = {
@@ -141,13 +141,13 @@ class CartController: UIViewController, UpdateCartProtocol {
     }
     
     private func updateTotalLabels() {
-        nftCountLabel.text = "\(privateNfts.count) NFT"
-        let price = privateNfts.reduce(into: 0) {$0 += $1.price}
+        nftCountLabel.text = "\(arrayNfts.count) NFT"
+        let price = arrayNfts.reduce(into: 0) {$0 += $1.price}
         costAllNft.text = String(format: "%.2f", price) + " ETH"
     }
     
     func pageReload() {
-        let state = privateNfts.isEmpty
+        let state = arrayNfts.isEmpty
         sortButton.isHidden = state
         tableView.isHidden = state
         thePayView.isHidden = state
@@ -160,15 +160,15 @@ class CartController: UIViewController, UpdateCartProtocol {
     private func cartSorting() {
         let alertController = UIAlertController(title: "Сортировка", message: nil, preferredStyle: .actionSheet)
         let cartSortByPrice = UIAlertAction(title: "По цене", style: .default) { _ in
-            self.privateNfts.sort { $0.price > $1.price }
+            self.arrayNfts.sort { $0.price > $1.price }
             self.pageReload()
         }
         let cartSortByRating = UIAlertAction(title: "По рейтингу", style: .default) { _ in
-            self.privateNfts.sort { $0.rating > $1.rating }
+            self.arrayNfts.sort { $0.rating > $1.rating }
             self.pageReload()
         }
         let cartSortByName = UIAlertAction(title: "По названию", style: .default) { _ in
-            self.privateNfts.sort { $0.name > $1.name }
+            self.arrayNfts.sort { $0.name > $1.name }
             self.pageReload()
         }
         let sortCancel = UIAlertAction(title: "Закрыть", style: .cancel)
@@ -181,40 +181,42 @@ class CartController: UIViewController, UpdateCartProtocol {
     }
     
     func nftUpdate(with nfts: [Nft]) {
-        self.privateNfts = nfts
+        self.arrayNfts = nfts
         pageReload()
     }
 }
 
-// MARK: - Extensions
+// MARK: - UITableViewDataSource
 extension CartController: UITableViewDataSource {
     func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
-        privateNfts.count
+        arrayNfts.count
     }
     
     func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
         guard let cell = tableView.dequeueReusableCell(withIdentifier: CartCell.reuseIdentifier, for: indexPath) as? CartCell else {
             return UITableViewCell()
         }
-        cell.setupCell(with: privateNfts[indexPath.row],delegate: self)
+        cell.setupCell(with: arrayNfts[indexPath.row],delegate: self)
         
         return cell
     }
 }
 
+// MARK: - UITableViewDelegate
 extension CartController: UITableViewDelegate {
     func tableView(_ tableView: UITableView, heightForRowAt indexPath: IndexPath) -> CGFloat {
         return 140
     }
 }
 
+// MARK: - Extension CartController
 extension CartController: CellCartProtocol {
     func present(with id: String, image: UIImage) {
         let deleteVC = DeleteCartController()
         deleteVC.modalPresentationStyle = .overFullScreen
         deleteVC.modalTransitionStyle = .crossDissolve
         deleteVC.onDelete = { [weak self] in
-            self?.privateNfts.removeAll { $0.id == id }
+            self?.arrayNfts.removeAll { $0.id == id }
             self?.pageReload()
         }
         deleteVC.setupImage(image)

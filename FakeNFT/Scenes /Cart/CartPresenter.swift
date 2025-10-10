@@ -1,5 +1,5 @@
 //
-//  PresenterForCart.swift
+//  CartPresenter.swift
 //  FakeNFT
 //
 //  Created by R Kolos on 6/10/25.
@@ -7,8 +7,8 @@
 
 import Foundation
 
-class PresenterForCart {
-    // MARK: - Proprties
+final class CartPresenter {
+    // MARK: - Properties
     private let requestNetwork: NetworkClient
     weak var view: UpdateCartProtocol?
     
@@ -30,10 +30,9 @@ class PresenterForCart {
             guard let self else { return }
             switch result {
             case .success(let response):
-                print(response)
                 self.view?.nftUpdate(with: response.nfts)
-            case .failure(let error):
-                print(error)
+                case .failure:
+                   break    
             }
         }
     }

@@ -14,7 +14,7 @@ final class DeleteCartController: UIViewController {
 
     private lazy var imageView: UIImageView = {
         let imageView = UIImageView()
-        imageView.image = UIImage(resource: .fakeNft)
+        imageView.image = UIImage(resource: .placeholder)
         imageView.contentMode = .scaleAspectFill
         imageView.clipsToBounds = true
         imageView.layer.cornerRadius = 12
