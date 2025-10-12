@@ -4,15 +4,6 @@ final class MyNFTViewController: UIViewController {
     
     // MARK: - UI Elements
     
-    private lazy var backButton: UIButton = {
-        let button = UIButton(type: .system)
-        button.setImage(UIImage(systemName: "chevron.left"), for: .normal)
-        button.tintColor = UIColor(hexString: "1A1B22") // yaBlackLight color
-        button.addTarget(self, action: #selector(backButtonTapped), for: .touchUpInside)
-        button.translatesAutoresizingMaskIntoConstraints = false
-        return button
-    }()
-    
     private lazy var emptyStateLabel: UILabel = {
         let label = UILabel()
         label.text = "У Вас ещё нет NFT"
@@ -37,19 +28,23 @@ final class MyNFTViewController: UIViewController {
     private func setupUI() {
         view.backgroundColor = .systemBackground
         
-        [backButton, emptyStateLabel].forEach {
-            view.addSubview($0)
-        }
+        // Navigation bar setup
+        navigationItem.leftBarButtonItem = UIBarButtonItem(
+            image: UIImage(systemName: "chevron.left"),
+            style: .plain,
+            target: self,
+            action: #selector(backButtonTapped)
+        )
+        navigationItem.leftBarButtonItem?.tintColor = UIColor(hexString: "1A1B22")
+        
+        // Hide navigation bar title
+        navigationItem.title = ""
+        
+        view.addSubview(emptyStateLabel)
     }
     
     private func setupConstraints() {
         NSLayoutConstraint.activate([
-            // Back button constraints
-            backButton.topAnchor.constraint(equalTo: view.safeAreaLayoutGuide.topAnchor, constant: 11),
-            backButton.leadingAnchor.constraint(equalTo: view.leadingAnchor, constant: 9),
-            backButton.widthAnchor.constraint(equalToConstant: 24),
-            backButton.heightAnchor.constraint(equalToConstant: 24),
-            
             // Empty state label constraints
             emptyStateLabel.centerXAnchor.constraint(equalTo: view.centerXAnchor),
             emptyStateLabel.centerYAnchor.constraint(equalTo: view.centerYAnchor),

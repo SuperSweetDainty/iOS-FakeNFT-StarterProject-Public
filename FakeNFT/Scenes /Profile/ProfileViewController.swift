@@ -47,8 +47,18 @@ final class ProfileViewController: UIViewController {
     override func viewDidLoad() {
         super.viewDidLoad()
         setupUI()
+        setupNavigationBar()
         setupNotifications()
         presenter.viewDidLoad()
+    }
+    
+    override func viewWillAppear(_ animated: Bool) {
+        super.viewWillAppear(animated)
+        
+        // Show navigation bar only if profile is already loaded (returning from sub-screens)
+        if user != nil {
+            navigationController?.setNavigationBarHidden(false, animated: true)
+        }
     }
     
     
@@ -71,6 +81,22 @@ final class ProfileViewController: UIViewController {
         activityIndicator.startAnimating()
         
         setupConstraints()
+    }
+    
+    private func setupNavigationBar() {
+        // Hide the default back button and title
+        navigationItem.title = nil
+        navigationItem.hidesBackButton = true
+        
+        // Add edit button to the right side of navigation bar
+        let editButton = UIBarButtonItem(
+            image: UIImage(resource: .editButton),
+            style: .plain,
+            target: self,
+            action: #selector(editButtonTapped)
+        )
+        editButton.tintColor = UIColor(hexString: "1A1B22")
+        navigationItem.rightBarButtonItem = editButton
     }
     
     private func setupNotifications() {
@@ -113,6 +139,9 @@ extension ProfileViewController: ProfileView {
             self?.activityIndicator.stopAnimating()
             self?.tableView.isHidden = false
             self?.tableView.reloadData()
+            
+            // Show navigation bar only after profile loads successfully
+            self?.navigationController?.setNavigationBarHidden(false, animated: true)
         }
     }
     
@@ -120,6 +149,9 @@ extension ProfileViewController: ProfileView {
         DispatchQueue.main.async { [weak self] in
             // Hide loading indicator
             self?.activityIndicator.stopAnimating()
+            
+            // Hide navigation bar on error state
+            self?.navigationController?.setNavigationBarHidden(true, animated: true)
             
             let alert = UIAlertController(
                 title: "Профиль не найден",
@@ -198,6 +230,10 @@ extension ProfileViewController: ProfileView {
             }
         }
     }
+    
+    @objc private func editButtonTapped() {
+        presenter.didTapEditProfile()
+    }
 }
 
 // MARK: - UITableViewDataSource
@@ -223,9 +259,6 @@ extension ProfileViewController: UITableViewDataSource {
             if let user = user {
                 cell.configure(
                     with: user,
-                    onEditTap: { [weak self] in
-                        self?.presenter.didTapEditProfile()
-                    },
                     onWebsiteTap: { [weak self] in
                         self?.presenter.didTapWebsite()
                     }
