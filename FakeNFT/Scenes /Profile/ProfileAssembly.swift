@@ -15,6 +15,13 @@ public final class ProfileAssembly {
         )
         let viewController = ProfileViewController(presenter: presenter)
         presenter.view = viewController
-        return viewController
+        
+        // Wrap in navigation controller for navigation support
+        let navigationController = UINavigationController(rootViewController: viewController)
+        
+        // Hide navigation bar for all screens (no titles needed per design)
+        navigationController.setNavigationBarHidden(true, animated: false)
+        
+        return navigationController
     }
 }

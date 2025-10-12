@@ -6,6 +6,7 @@ final class ProfileViewController: UIViewController {
     
     private let presenter: ProfilePresenter
     private var user: User?
+    var currentAvatarImage: UIImage?
     
     // MARK: - UI Elements
     
@@ -46,21 +47,46 @@ final class ProfileViewController: UIViewController {
     override func viewDidLoad() {
         super.viewDidLoad()
         setupUI()
+        setupNotifications()
         presenter.viewDidLoad()
+    }
+    
+    
+    deinit {
+        NotificationCenter.default.removeObserver(self)
     }
     
     // MARK: - Setup
     
     private func setupUI() {
         view.backgroundColor = .background
-        title = "Профиль"
         
         [tableView, activityIndicator].forEach {
             $0.translatesAutoresizingMaskIntoConstraints = false
             view.addSubview($0)
         }
         
+        // Initially hide table view and show loading indicator
+        tableView.isHidden = true
+        activityIndicator.startAnimating()
+        
         setupConstraints()
+    }
+    
+    private func setupNotifications() {
+        NotificationCenter.default.addObserver(
+            self,
+            selector: #selector(profileDidUpdate(_:)),
+            name: .profileDidUpdate,
+            object: nil
+        )
+        
+        NotificationCenter.default.addObserver(
+            self,
+            selector: #selector(avatarDidChange(_:)),
+            name: .avatarDidChange,
+            object: nil
+        )
     }
     
     private func setupConstraints() {
@@ -83,18 +109,94 @@ extension ProfileViewController: ProfileView {
     func displayProfile(_ user: User) {
         self.user = user
         DispatchQueue.main.async { [weak self] in
+            // Hide loading indicator and show table view
+            self?.activityIndicator.stopAnimating()
+            self?.tableView.isHidden = false
             self?.tableView.reloadData()
         }
     }
     
     func showEmptyState() {
-        // TODO: Implement empty state
+        DispatchQueue.main.async { [weak self] in
+            // Hide loading indicator
+            self?.activityIndicator.stopAnimating()
+            
+            let alert = UIAlertController(
+                title: "Профиль не найден",
+                message: "Не удалось загрузить данные профиля",
+                preferredStyle: .alert
+            )
+            
+            alert.addAction(UIAlertAction(title: "Повторить", style: .default) { _ in
+                // Show loading indicator again and restart loading
+                self?.activityIndicator.startAnimating()
+                self?.tableView.isHidden = true
+                self?.presenter.viewDidLoad()
+            })
+            
+            alert.addAction(UIAlertAction(title: "Отмена", style: .cancel))
+            
+            self?.present(alert, animated: true)
+        }
     }
     
     func showWebView(with url: URL) {
         let webViewController = WebViewController(url: url)
         let navigationController = UINavigationController(rootViewController: webViewController)
         present(navigationController, animated: true)
+    }
+    
+    func presentEditProfile(_ viewController: UIViewController) {
+        let navigationController = UINavigationController(rootViewController: viewController)
+        navigationController.modalPresentationStyle = .fullScreen
+        present(navigationController, animated: true)
+    }
+    
+    func dismissEditProfile() {
+        dismiss(animated: true)
+    }
+    
+    func updateAvatar(_ image: UIImage?) {
+        // Update the avatar in ProfileHeaderCell
+        DispatchQueue.main.async { [weak self] in
+            self?.currentAvatarImage = image
+            self?.updateAvatarInHeaderCell(image)
+        }
+    }
+    
+    private func updateAvatarInHeaderCell(_ image: UIImage?) {
+        // Find the ProfileHeaderCell and update its avatar
+        if let headerCell = tableView.cellForRow(at: IndexPath(row: 0, section: 0)) as? ProfileHeaderCell {
+            headerCell.updateAvatar(image)
+        }
+    }
+    
+    // MARK: - Notification Handlers
+    
+    @objc private func profileDidUpdate(_ notification: Notification) {
+        guard let userDict = notification.object as? [String: User],
+              let updatedUser = userDict["user"] else { return }
+        
+        DispatchQueue.main.async { [weak self] in
+            self?.user = updatedUser
+            self?.tableView.reloadData()
+        }
+    }
+    
+    @objc private func avatarDidChange(_ notification: Notification) {
+        guard let imageDict = notification.object as? [String: Any] else { return }
+        
+        DispatchQueue.main.async { [weak self] in
+            if let newAvatarImage = imageDict["image"] as? UIImage {
+                // Avatar was changed to a new image
+                self?.currentAvatarImage = newAvatarImage
+                self?.updateAvatarInHeaderCell(newAvatarImage)
+            } else if imageDict["image"] is NSNull {
+                // Avatar was removed
+                self?.currentAvatarImage = nil
+                self?.updateAvatarInHeaderCell(nil)
+            }
+        }
     }
 }
 
@@ -128,6 +230,14 @@ extension ProfileViewController: UITableViewDataSource {
                         self?.presenter.didTapWebsite()
                     }
                 )
+                
+                // Apply current avatar image if available, otherwise let configure handle it
+                if let currentAvatarImage = currentAvatarImage {
+                    cell.updateAvatar(currentAvatarImage)
+                } else {
+                    // Ensure system icon is set when no current avatar
+                    cell.updateAvatar(nil)
+                }
             }
             return cell
             
@@ -184,3 +294,19 @@ extension ProfileViewController: UITableViewDelegate {
         }
     }
 }
+
+// MARK: - ProfileView Extension
+
+extension ProfileViewController {
+    
+    func navigateToMyNFTs() {
+        let myNFTViewController = MyNFTViewController()
+        navigationController?.pushViewController(myNFTViewController, animated: true)
+    }
+    
+    func navigateToFavoriteNFTs() {
+        let favoritesNFTViewController = FavoritesNFTViewController()
+        navigationController?.pushViewController(favoritesNFTViewController, animated: true)
+    }
+}
+

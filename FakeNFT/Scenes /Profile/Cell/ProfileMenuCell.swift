@@ -7,7 +7,7 @@ final class ProfileMenuCell: UITableViewCell {
     private lazy var titleLabel: UILabel = {
         let label = UILabel()
         label.font = .bodyBold
-        label.textColor = .yaBlackLight
+        label.textColor = UIColor(hexString: "1A1B22")
         return label
     }()
     
@@ -15,7 +15,7 @@ final class ProfileMenuCell: UITableViewCell {
         let imageView = UIImageView()
         let config = UIImage.SymbolConfiguration(pointSize: 14, weight: .medium)
         imageView.image = UIImage(systemName: "chevron.right", withConfiguration: config)
-        imageView.tintColor = .yaBlackLight
+        imageView.tintColor = UIColor(hexString: "1A1B22")
         imageView.contentMode = .center
         return imageView
     }()

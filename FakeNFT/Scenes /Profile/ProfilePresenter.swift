@@ -1,4 +1,5 @@
 import Foundation
+import UIKit
 
 // MARK: - Protocol
 
@@ -22,6 +23,11 @@ protocol ProfileView: AnyObject, ErrorView, LoadingView {
     func displayProfile(_ user: User)
     func showEmptyState()
     func showWebView(with url: URL)
+    func presentEditProfile(_ viewController: UIViewController)
+    func dismissEditProfile()
+    func updateAvatar(_ image: UIImage?)
+    func navigateToMyNFTs()
+    func navigateToFavoriteNFTs()
 }
 
 // MARK: - Presenter Implementation
@@ -53,15 +59,28 @@ final class ProfilePresenterImpl: ProfilePresenter {
     }
     
     func didTapEditProfile() {
-        // TODO: Navigate to edit profile screen
+        guard case .data(let user) = state else { return }
+        
+        let editViewController = EditProfileViewController(
+            user: user,
+            currentAvatarImage: (view as? ProfileViewController)?.currentAvatarImage,
+            onSave: { [weak self] updatedUser in
+                self?.updateProfile(updatedUser)
+            },
+            onCancel: { [weak self] in
+                self?.view?.dismissEditProfile()
+            }
+        )
+        
+        view?.presentEditProfile(editViewController)
     }
     
     func didTapMyNFTs() {
-        // TODO: Navigate to My NFTs screen
+        view?.navigateToMyNFTs()
     }
     
     func didTapFavoriteNFTs() {
-        // TODO: Navigate to Favorite NFTs screen
+        view?.navigateToFavoriteNFTs()
     }
     
     func didTapWebsite() {
@@ -96,6 +115,22 @@ final class ProfilePresenterImpl: ProfilePresenter {
                 self?.state = .data(user)
             case .failure(let error):
                 self?.state = .failed(error)
+            }
+        }
+    }
+    
+    private func updateProfile(_ user: User) {
+        service.updateProfile(user) { [weak self] result in
+            switch result {
+            case .success(let updatedUser):
+                self?.state = .data(updatedUser)
+                self?.view?.dismissEditProfile()
+            case .failure(let error):
+                self?.view?.showError(ErrorModel(
+                    message: error.localizedDescription,
+                    actionText: "OK",
+                    action: {}
+                ))
             }
         }
     }

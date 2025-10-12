@@ -10,14 +10,14 @@ final class ProfileHeaderCell: UITableViewCell {
         imageView.contentMode = .scaleAspectFill
         imageView.clipsToBounds = true
         imageView.layer.cornerRadius = 35
-        imageView.backgroundColor = .systemGray5
+        imageView.backgroundColor = .clear
         return imageView
     }()
     
     private lazy var nameLabel: UILabel = {
         let label = UILabel()
         label.font = .headline3
-        label.textColor = .yaBlackLight
+        label.textColor = UIColor(hexString: "1A1B22")
         label.numberOfLines = 0
         return label
     }()
@@ -25,7 +25,7 @@ final class ProfileHeaderCell: UITableViewCell {
     private lazy var descriptionLabel: UILabel = {
         let label = UILabel()
         label.font = .bodyRegular
-        label.textColor = .yaBlackLight
+        label.textColor = UIColor(hexString: "1A1B22")
         label.numberOfLines = 0
         return label
     }()
@@ -41,7 +41,7 @@ final class ProfileHeaderCell: UITableViewCell {
     private lazy var editButton: UIButton = {
         let button = UIButton(type: .system)
         button.setImage(UIImage(resource: .editButton), for: .normal)
-        button.tintColor = .yaBlackLight
+        button.tintColor = UIColor(hexString: "1A1B22")
         button.contentMode = .scaleAspectFit
         button.imageView?.contentMode = .scaleAspectFit
         button.translatesAutoresizingMaskIntoConstraints = false
@@ -140,8 +140,12 @@ final class ProfileHeaderCell: UITableViewCell {
         if let avatarURL = user.avatar {
             avatarImageView.kf.setImage(with: avatarURL)
         } else {
+            // Set system icon directly without clearing Kingfisher
             avatarImageView.image = UIImage(systemName: "person.circle.fill")
             avatarImageView.tintColor = .systemGray3
+            avatarImageView.backgroundColor = .clear
+            
+            print("DEBUG: Setting system icon directly")
         }
         
         if let website = user.website {
@@ -149,6 +153,24 @@ final class ProfileHeaderCell: UITableViewCell {
             websiteButton.isHidden = false
         } else {
             websiteButton.isHidden = true
+        }
+    }
+    
+    // MARK: - Avatar Update
+    
+    func updateAvatar(_ image: UIImage?) {
+        if let image = image {
+            // Set new image directly
+            avatarImageView.image = image
+            avatarImageView.tintColor = nil
+            avatarImageView.backgroundColor = .clear
+        } else {
+            // Set system icon directly
+            avatarImageView.image = UIImage(systemName: "person.circle.fill")
+            avatarImageView.tintColor = .systemGray3
+            avatarImageView.backgroundColor = .clear
+            
+            print("DEBUG: updateAvatar setting system icon directly")
         }
     }
 }
