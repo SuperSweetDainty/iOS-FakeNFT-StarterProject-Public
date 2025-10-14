@@ -11,6 +11,7 @@ final class CartController: UIViewController, UpdateCartProtocol {
     // MARK: - Properties
     private var arrayNfts: [Nft] = []
     private var presenter: PresenterCartProtocol?
+    private var servicesAssembly: ServicesAssembly
     
     private lazy var tableView: UITableView = {
         let tableView = UITableView()
@@ -45,6 +46,7 @@ final class CartController: UIViewController, UpdateCartProtocol {
         thePayButton.setTitleColor(.white, for: .normal)
         thePayButton.backgroundColor = .segmentActive
         thePayButton.layer.cornerRadius = 16
+        thePayButton.addTarget(self, action: #selector(Self.forPayment), for: .touchUpInside)
         return thePayButton
     }()
     
@@ -72,6 +74,7 @@ final class CartController: UIViewController, UpdateCartProtocol {
 
     // MARK: - init
     init(servicesAssembly: ServicesAssembly) {
+        self.servicesAssembly = servicesAssembly
         super.init(nibName: nil, bundle: nil)
         self.presenter = MockDataForCart(view: self, networkService: servicesAssembly.cartNetworkClient)
         
@@ -178,6 +181,26 @@ final class CartController: UIViewController, UpdateCartProtocol {
         alertController.addAction(cartSortByName)
         alertController.addAction(sortCancel)
         present(alertController, animated: true)
+    }
+    
+    @objc
+    private func forPayment() {
+        let payChoosingVC = PayChoosingController(servicesAssembly: servicesAssembly)
+        payChoosingVC.navigationItem.leftBarButtonItem = UIBarButtonItem(
+            image: UIImage(resource: .chevronBackward),
+            style: .plain,
+            target: self,
+            action: #selector(goBack)
+        )
+        payChoosingVC.navigationItem.leftBarButtonItem?.tintColor = .segmentActive
+        
+        navigationController?.pushViewController(payChoosingVC, animated: true)
+    }
+    
+    
+    @objc
+    private func goBack() {
+        navigationController?.popViewController(animated: true)
     }
     
     func nftUpdate(with nfts: [Nft]) {
