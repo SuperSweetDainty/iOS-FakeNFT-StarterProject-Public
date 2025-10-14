@@ -8,13 +8,15 @@
 import UIKit
 import ProgressHUD
 
+import UIKit
+import ProgressHUD
+
 protocol CatalogViewControllerProtocol: AnyObject {
     func displayCollections(_ collections: [CatalogCollectionNft])
     func showLoading()
     func hideLoading()
     func showError(_ message: String)
     func showEmptyState()
-    func navigateToCollectionDetail(collectionId: String)
 }
 
 
@@ -148,11 +150,6 @@ final class CatalogViewController: UIViewController, CatalogViewControllerProtoc
         catalogTableView.isHidden = true
     }
     
-    func navigateToCollectionDetail(collectionId: String) {
-        let detailVC = CatalogCollectionViewController(collectionId: collectionId)
-        navigationController?.pushViewController(detailVC, animated: true)
-    }
-    
     // MARK: - Private Methods
     private func setupNavigationBar(){
         let sortButton = UIBarButtonItem(
@@ -203,11 +200,6 @@ final class CatalogViewController: UIViewController, CatalogViewControllerProtoc
         catalogTableView.isHidden = false
         catalogTableView.reloadData()
     }
-    
-    private func showCollectionDetail(collectionId: String) {
-        let collectionVC = CatalogCollectionViewController(collectionId: collectionId)
-        navigationController?.pushViewController(collectionVC, animated: true)
-    }
 }
 
 // MARK: - UITableViewDataSource
@@ -245,6 +237,9 @@ extension CatalogViewController: UITableViewDelegate {
     
     func tableView(_ tableView: UITableView, didSelectRowAt indexPath: IndexPath) {
         tableView.deselectRow(at: indexPath, animated: true)
-        presenter?.didSelectCollection(at: indexPath.row)
+        
+        guard let collection = presenter?.collection(at: indexPath.row) else { return }
+        let collectionVC = CatalogCollectionViewController(collection: collection)
+        navigationController?.pushViewController(collectionVC, animated: true)
     }
 }

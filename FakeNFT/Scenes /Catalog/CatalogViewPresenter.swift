@@ -11,7 +11,6 @@ protocol CatalogViewPresenterProtocol: AnyObject {
     var view: CatalogViewControllerProtocol? { get set }
     func viewDidLoad()
     func didSelectSortOption(_ option: SortOption)
-    func didSelectCollection(at index: Int)
     func didTapRetry()
     
     var collectionsCount: Int { get }
@@ -44,12 +43,6 @@ final class CatalogViewPresenter: CatalogViewPresenterProtocol {
         currentSortOption = option
         currentSortOption.save()
         applySorting()
-    }
-    
-    func didSelectCollection(at index: Int) {
-        guard collectionsNft.indices.contains(index) else { return }
-        let collection = collectionsNft[index]
-        view?.navigateToCollectionDetail(collectionId: collection.id)
     }
     
     func didTapRetry() {
