@@ -156,6 +156,7 @@ final class CatalogNftCollectionViewCell: UICollectionViewCell {
         ])
     }
     
+    
     private func setupRating(rating: Int) {
             clearRating()
             

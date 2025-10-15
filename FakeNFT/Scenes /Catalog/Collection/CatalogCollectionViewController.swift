@@ -6,13 +6,14 @@
 //
 
 import UIKit
+import ProgressHUD
 
 
 final class CatalogCollectionViewController: UIViewController {
     
     // MARK: - Private Properties
     //private let collectionId: String
-    private var collection: CatalogCollectionNft?
+    private var collection: CatalogCollectionNft
     private var nftCollectionCell: [NftCellModel] = []
     
     // MARK: - UI Elements
@@ -27,6 +28,7 @@ final class CatalogCollectionViewController: UIViewController {
             collectionViewLayout: layout
         )
         collectionView.backgroundColor = .clear
+        collectionView.isHidden = true
         collectionView.register(
             CatalogNftCollectionViewCell.self,
             forCellWithReuseIdentifier: CatalogNftCollectionViewCell.identifier
@@ -41,8 +43,57 @@ final class CatalogCollectionViewController: UIViewController {
         return collectionView
     }()
     
+    private lazy var emptyStateImageView: UIImageView = {
+        let imageView = UIImageView()
+        imageView.image = UIImage(resource: .emptyState)
+        imageView.translatesAutoresizingMaskIntoConstraints = false
+        
+        return imageView
+    }()
+    
+    private lazy var emptyStateTitleLabel: UILabel = {
+        let label = UILabel()
+        label.text = "В коллекции пока нет NFT"
+        label.font = UIFont.bodyBold
+        label.textColor = .textPrimary
+        label.textAlignment = .center
+        label.numberOfLines = 0
+        label.translatesAutoresizingMaskIntoConstraints = false
+        return label
+    }()
+    
+    private lazy var emptyStateMessageLabel: UILabel = {
+        let label = UILabel()
+        label.text = "попробуйте позже или обновите коллекцию"
+        label.font = UIFont.caption1
+        label.textColor = .textPrimary
+        label.textAlignment = .center
+        label.numberOfLines = 0
+        label.translatesAutoresizingMaskIntoConstraints = false
+        return label
+    }()
+    
+    private lazy var retryButton: UIButton = {
+        let button = UIButton(type: .system)
+        button.setTitle("Попробовать снова", for: .normal)
+        button.titleLabel?.font = UIFont.bodyBold
+        button.addTarget(self, action: #selector(retryButtonTapped), for: .touchUpInside)
+        return button
+    }()
+    
+    private lazy var emptyStateStack: UIStackView = {
+        let stackView = UIStackView(arrangedSubviews: [emptyStateImageView, emptyStateTitleLabel, emptyStateMessageLabel, retryButton])
+        stackView.alignment = .center
+        stackView.axis = .vertical
+        stackView.spacing = 8
+        stackView.isHidden = true
+        stackView.translatesAutoresizingMaskIntoConstraints = false
+        
+        return stackView
+    }()
+    
     // MARK: - Init
-    init(collection: CatalogCollectionNft? = nil) {
+    init(collection: CatalogCollectionNft) {
         self.collection = collection
         super.init(nibName: nil, bundle: nil)
     }
@@ -69,6 +120,12 @@ final class CatalogCollectionViewController: UIViewController {
         navigationController?.setNavigationBarHidden(false, animated: false)
     }
     
+    //MARK: - Public Methods
+    func displayCollections(_ collections: [NftCellModel]) {
+        collectionView.reloadData()
+        showContentState()
+    }
+    
     private func setupUI(){
         configureView()
         addSubviews()
@@ -80,7 +137,7 @@ final class CatalogCollectionViewController: UIViewController {
     }
     
     private func addSubviews() {
-        [collectionView].forEach { view.addSubview($0) }
+        [collectionView, emptyStateStack].forEach { view.addSubview($0) }
     }
     
     private func setupConstraints() {
@@ -88,17 +145,79 @@ final class CatalogCollectionViewController: UIViewController {
             collectionView.topAnchor.constraint(equalTo: view.topAnchor),
             collectionView.leadingAnchor.constraint(equalTo: view.leadingAnchor),
             collectionView.trailingAnchor.constraint(equalTo: view.trailingAnchor),
-            collectionView.bottomAnchor.constraint(equalTo: view.bottomAnchor)
+            collectionView.bottomAnchor.constraint(equalTo: view.bottomAnchor),
+            
+            //Empty State ImageView
+            emptyStateImageView.heightAnchor.constraint(equalToConstant: 80),
+            emptyStateImageView.widthAnchor.constraint(equalToConstant: 80),
+            
+            // Empty State Stack
+            emptyStateStack.centerXAnchor.constraint(equalTo: view.centerXAnchor),
+            emptyStateStack.centerYAnchor.constraint(equalTo: view.centerYAnchor)
         ])
     }
     
     private func loadNFTs() {
-            nftCollectionCell = createMockCollections()
-            collectionView.reloadData()
+        showLoading()
+        
+        // Имитация загрузки
+        DispatchQueue.main.asyncAfter(deadline: .now() + 2) { [weak self] in
+            guard let self = self else { return }
+            
+            let shouldFail = false // Для теста ошибка true
+            let isEmptyCollection = false // true - пустая коллекция
+            
+            if shouldFail {
+                self.showError("Нет удалось загрузить коллекцию")
+            }  else if isEmptyCollection {
+                self.nftCollectionCell = [] // Пустая коллекция
+                self.showEmptyState()
+            } else {
+                self.nftCollectionCell = self.createMockNftCollections()
+                self.showContentState()
+            }
+            
+            self.hideLoading()
+        }
+    }
+    
+    func showLoading(){
+        ProgressHUD.show()
+        
+        collectionView.isHidden = true
+        emptyStateStack.isHidden = true
+    }
+    
+    func hideLoading() {
+        ProgressHUD.dismiss()
+    }
+    
+    private func showError(_ message: String) {
+            emptyStateStack.isHidden = false
+            collectionView.isHidden = true
+            emptyStateTitleLabel.text = "Ошибка загрузки"
+            emptyStateMessageLabel.text = message
         }
     
+    @objc private func retryButtonTapped() {
+           loadNFTs()
+       }
+    
+    
+    func showEmptyState() {
+        emptyStateStack.isHidden = false
+        collectionView.isHidden = true
+        emptyStateTitleLabel.text = "В коллекции пока нет NFT"
+    }
+    
+    private func showContentState() {
+        emptyStateStack.isHidden = true
+        collectionView.isHidden = false
+        collectionView.reloadData()
+    }
+    
     // MARK: - Mock
-    private func createMockCollections() -> [NftCellModel] {
+    private func createMockNftCollections() -> [NftCellModel] {
         return [
             NftCellModel(id: "1", name: "Archie", images: "nftCardsOne", rating: 2, price: 1, isFavorite: true, isInCart: false),
             NftCellModel(id: "2", name: "Ruby", images: "nftCardsTwo", rating: 2, price: 2, isFavorite: true, isInCart: true),
@@ -160,10 +279,7 @@ extension CatalogCollectionViewController: UICollectionViewDelegateFlowLayout {
             ) as? CatalogCollectionSectionHeaderView else {
                 return UICollectionReusableView()
             }
-            
-            if let collection = collection {
-                header.configure(with: collection)
-            }
+            header.configure(with: collection)
             
             return header
         }
