@@ -114,7 +114,7 @@ final class CatalogCollectionViewController: UIViewController {
         super.viewWillAppear(animated)
         navigationController?.setNavigationBarHidden(true, animated: false)
     }
-
+    
     override func viewWillDisappear(_ animated: Bool) {
         super.viewWillDisappear(animated)
         navigationController?.setNavigationBarHidden(false, animated: false)
@@ -193,15 +193,15 @@ final class CatalogCollectionViewController: UIViewController {
     }
     
     private func showError(_ message: String) {
-            emptyStateStack.isHidden = false
-            collectionView.isHidden = true
-            emptyStateTitleLabel.text = "Ошибка загрузки"
-            emptyStateMessageLabel.text = message
-        }
+        emptyStateStack.isHidden = false
+        collectionView.isHidden = true
+        emptyStateTitleLabel.text = "Ошибка загрузки"
+        emptyStateMessageLabel.text = message
+    }
     
     @objc private func retryButtonTapped() {
-           loadNFTs()
-       }
+        loadNFTs()
+    }
     
     
     func showEmptyState() {
@@ -216,9 +216,80 @@ final class CatalogCollectionViewController: UIViewController {
         collectionView.reloadData()
     }
     
+    private func handleLike(for nftId: String) {
+        guard let index = nftCollectionCell.firstIndex(where: { $0.id == nftId }) else { return }
+        
+        // Инвертируем состояние лайка
+        nftCollectionCell[index].isFavorite.toggle()
+        
+        // Обновляем только нужную ячейку
+        collectionView.reloadItems(at: [IndexPath(item: index, section: 0)])
+        
+        // Сохраняем состояние лайка (мок-реализация)
+        saveLikeState(nftId: nftId, isLiked: nftCollectionCell[index].isFavorite)
+        
+        // Анимация для обратной связи
+        animateForButton(at: index)
+    }
+    
+    private func saveLikeState(nftId: String, isLiked: Bool) {
+            // TODO: Заменить на реальное сохранение в сторедж/сервер
+            print("NFT \(nftId) like state: \(isLiked ? "liked" : "unliked")")
+            
+            // Мок-сохранение в UserDefaults
+            UserDefaults.standard.set(isLiked, forKey: "nft_like_\(nftId)")
+        }
+        
+        private func loadLikeState(nftId: String) -> Bool {
+            // TODO: Заменить на реальную загрузку из стореджа/сервера
+            return UserDefaults.standard.bool(forKey: "nft_like_\(nftId)")
+        }
+    
+    private func animateForButton(at index: Int) {
+        guard let cell = collectionView.cellForItem(at: IndexPath(item: index, section: 0)) as? CatalogNftCollectionViewCell else { return }
+        
+        UIView.animate(withDuration: 0.1, animations: {
+            cell.transform = CGAffineTransform(scaleX: 1.05, y: 1.05)
+        }) { _ in
+            UIView.animate(withDuration: 0.1) {
+                cell.transform = CGAffineTransform.identity
+            }
+        }
+    }
+    
+    private func handleCart(for nftId: String) {
+        guard let index = nftCollectionCell.firstIndex(where: { $0.id == nftId }) else { return }
+        
+        // Инвертируем состояние лайка
+        nftCollectionCell[index].isInCart.toggle()
+        
+        // Обновляем только нужную ячейку
+        collectionView.reloadItems(at: [IndexPath(item: index, section: 0)])
+        
+        // Сохраняем состояние лайка (мок-реализация)
+        saveCartState(nftId: nftId, isInCart: nftCollectionCell[index].isFavorite)
+        
+        // Анимация для обратной связи
+        animateForButton(at: index)
+    }
+    
+    private func saveCartState(nftId: String, isInCart: Bool) {
+            // TODO: Заменить на реальное сохранение в сторедж/сервер
+            print("NFT \(nftId) like state: \(isInCart ? "cart" : "noCart")")
+            
+            // Мок-сохранение в UserDefaults
+            UserDefaults.standard.set(isInCart, forKey: "nft_cart_\(nftId)")
+        }
+        
+        private func loadCartState(nftId: String) -> Bool {
+            // TODO: Заменить на реальную загрузку
+            return UserDefaults.standard.bool(forKey: "nft_cart_\(nftId)")
+        }
+
+    
     // MARK: - Mock
     private func createMockNftCollections() -> [NftCellModel] {
-        return [
+        let mockNFTs = [
             NftCellModel(id: "1", name: "Archie", images: "nftCardsOne", rating: 2, price: 1, isFavorite: true, isInCart: false),
             NftCellModel(id: "2", name: "Ruby", images: "nftCardsTwo", rating: 2, price: 2, isFavorite: true, isInCart: true),
             NftCellModel(id: "3", name: "Nacho", images: "nftCardsThree", rating: 3, price: 1, isFavorite: false, isInCart: true),
@@ -227,6 +298,12 @@ final class CatalogCollectionViewController: UIViewController {
             NftCellModel(id: "6", name: "Susan", images: "nftCardsTwo", rating: 2, price: 1, isFavorite: false, isInCart: true),
             NftCellModel(id: "7", name: "Biscuit", images: "nftCardsOne", rating: 2, price: 1, isFavorite: false, isInCart: true),
         ]
+        return mockNFTs.map { nft in
+            var updatedNft = nft
+            updatedNft.isFavorite = loadLikeState(nftId: nft.id)
+            updatedNft.isInCart = loadCartState(nftId: nft.id)
+            return updatedNft
+        }
     }
 }
 
@@ -244,6 +321,15 @@ extension CatalogCollectionViewController: UICollectionViewDataSource {
         }
         let nft = nftCollectionCell[indexPath.item]
         cell.configure(with: nft)
+        
+        cell.onFavoriteButtonTapped = { [weak self] in
+            self?.handleLike(for: nft.id)
+        }
+        
+        cell.onCartButtonTapped = { [weak self] in
+            self?.handleCart(for: nft.id)
+        }
+        
         return cell
     }
     

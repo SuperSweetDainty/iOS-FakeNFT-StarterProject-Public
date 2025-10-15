@@ -11,6 +11,9 @@ final class CatalogNftCollectionViewCell: UICollectionViewCell {
     // MARK: - Static Properties
     static let identifier = "CatalogNFTCollectionViewCell"
     
+    var onFavoriteButtonTapped: (() -> Void)?
+    var onCartButtonTapped: (() -> Void)?
+    
     // MARK: - UI Elements
     private lazy var nftImageView: UIImageView = {
         let imageView = UIImageView()
@@ -22,7 +25,7 @@ final class CatalogNftCollectionViewCell: UICollectionViewCell {
         return imageView
     }()
     
-    private var favoriteNftButton: UIButton = {
+     private lazy var favoriteNftButton: UIButton = {
         let button = UIButton(type: .custom)
         button.addTarget(self, action: #selector(favoriteButtonTapped), for: .touchUpInside)
         button.translatesAutoresizingMaskIntoConstraints = false
@@ -59,7 +62,7 @@ final class CatalogNftCollectionViewCell: UICollectionViewCell {
         return label
     }()
     
-    private var cartButton: UIButton = {
+    private lazy var cartButton: UIButton = {
         let button = UIButton(type: .custom)
         button.addTarget(self, action: #selector(cartButtonTapped), for: .touchUpInside)
         button.translatesAutoresizingMaskIntoConstraints = false
@@ -84,6 +87,7 @@ final class CatalogNftCollectionViewCell: UICollectionViewCell {
         nameNftLabel.text = nil
         priceNftLabel.text = nil
         clearRating()
+        onFavoriteButtonTapped = nil
     }
     
     // MARK: - Public Methods
@@ -109,10 +113,8 @@ final class CatalogNftCollectionViewCell: UICollectionViewCell {
        }
     
     private func setupUI() {
-        
         addSubviews()
         setupConstraints()
-        
     }
     
     private func addSubviews() {
@@ -191,12 +193,10 @@ final class CatalogNftCollectionViewCell: UICollectionViewCell {
     }
     
     @objc private func favoriteButtonTapped() {
-           // TODO: Реализовать логику лайка
-           print("Like button tapped")
+        onFavoriteButtonTapped?()
        }
        
        @objc private func cartButtonTapped() {
-           // TODO: Реализовать логику корзины
-           print("Cart button tapped")
+           onCartButtonTapped?()
        }
 }
