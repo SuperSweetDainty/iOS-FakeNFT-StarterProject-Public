@@ -2,7 +2,7 @@ import UIKit
 
 // MARK: - MyNFTCell
 
-final class MyNFTCell: UICollectionViewCell, ReuseIdentifying {
+final class MyNFTCell: UITableViewCell, ReuseIdentifying {
     
     // MARK: - Properties
     
@@ -86,8 +86,8 @@ final class MyNFTCell: UICollectionViewCell, ReuseIdentifying {
     
     // MARK: - Init
     
-    override init(frame: CGRect) {
-        super.init(frame: frame)
+    override init(style: UITableViewCell.CellStyle, reuseIdentifier: String?) {
+        super.init(style: style, reuseIdentifier: reuseIdentifier)
         setupUI()
         setupConstraints()
     }
@@ -116,8 +116,7 @@ final class MyNFTCell: UICollectionViewCell, ReuseIdentifying {
             
             // NFT Image - слева от ячейки (16 от экрана)
             nftImageView.topAnchor.constraint(equalTo: containerView.topAnchor),
-//            nftImageView.leadingAnchor.constraint(equalTo: containerView.leadingAnchor, constant: 16),
-//            nftImageView.bottomAnchor.constraint(equalTo: containerView.bottomAnchor),
+            nftImageView.leadingAnchor.constraint(equalTo: containerView.leadingAnchor, constant: 16),
             nftImageView.widthAnchor.constraint(equalTo: nftImageView.heightAnchor),
             
             // Like button
@@ -230,26 +229,22 @@ final class MyNFTViewController: UIViewController {
     
     private var nfts: [Nft] = []
     private var likedNFTs: Set<String> = []
+    private var currentSortCriteria: SortCriteria = .price
     
     // MARK: - UI Elements
     
-    private lazy var collectionView: UICollectionView = {
-        let layout = UICollectionViewFlowLayout()
-        layout.scrollDirection = .vertical
-        layout.minimumInteritemSpacing = 20
-        layout.minimumLineSpacing = 32
-        layout.sectionInset = UIEdgeInsets(top: 16, left: 0, bottom: 16, right: 16)
-        
-        let collectionView = UICollectionView(frame: .zero, collectionViewLayout: layout)
-        collectionView.delegate = self
-        collectionView.dataSource = self
-        collectionView.backgroundColor = .background
-        collectionView.showsVerticalScrollIndicator = false
+    private lazy var tableView: UITableView = {
+        let tableView = UITableView(frame: .zero, style: .plain)
+        tableView.delegate = self
+        tableView.dataSource = self
+        tableView.backgroundColor = .background
+        tableView.showsVerticalScrollIndicator = false
+        tableView.separatorStyle = .none
         
         // Register cells
-        collectionView.register(MyNFTCell.self)
+        tableView.register(MyNFTCell.self, forCellReuseIdentifier: "MyNFTCell")
         
-        return collectionView
+        return tableView
     }()
     
     private lazy var emptyStateLabel: UILabel = {
@@ -270,7 +265,12 @@ final class MyNFTViewController: UIViewController {
         setupUI()
         setupNavigationBar()
         setupConstraints()
+        setupNotifications()
         loadNFTs()
+    }
+    
+    deinit {
+        NotificationCenter.default.removeObserver(self)
     }
     
     // MARK: - Setup
@@ -278,7 +278,7 @@ final class MyNFTViewController: UIViewController {
     private func setupUI() {
         view.backgroundColor = .background
         
-        [collectionView, emptyStateLabel].forEach {
+        [tableView, emptyStateLabel].forEach {
             $0.translatesAutoresizingMaskIntoConstraints = false
             view.addSubview($0)
         }
@@ -310,10 +310,10 @@ final class MyNFTViewController: UIViewController {
     
     private func setupConstraints() {
         NSLayoutConstraint.activate([
-            collectionView.topAnchor.constraint(equalTo: view.safeAreaLayoutGuide.topAnchor),
-            collectionView.leadingAnchor.constraint(equalTo: view.leadingAnchor),
-            collectionView.trailingAnchor.constraint(equalTo: view.trailingAnchor),
-            collectionView.bottomAnchor.constraint(equalTo: view.bottomAnchor),
+            tableView.topAnchor.constraint(equalTo: view.safeAreaLayoutGuide.topAnchor),
+            tableView.leadingAnchor.constraint(equalTo: view.leadingAnchor),
+            tableView.trailingAnchor.constraint(equalTo: view.trailingAnchor),
+            tableView.bottomAnchor.constraint(equalTo: view.bottomAnchor),
             
             emptyStateLabel.centerXAnchor.constraint(equalTo: view.centerXAnchor),
             emptyStateLabel.centerYAnchor.constraint(equalTo: view.centerYAnchor),
@@ -354,7 +354,42 @@ final class MyNFTViewController: UIViewController {
         )
         
         nfts = [liloNFT, springNFT, aprilNFT]
+        
+        // Load liked NFTs from UserDefaults
+        loadLikedNFTs()
+        
+        // Load saved sort criteria and apply it
+        loadSavedSortCriteria()
+        applyCurrentSort()
+        
         updateUI()
+    }
+    
+    private func loadLikedNFTs() {
+        if let likedNFTsData = UserDefaults.standard.data(forKey: "LikedNFTs"),
+           let likedNFTsSet = try? JSONDecoder().decode(Set<String>.self, from: likedNFTsData) {
+            likedNFTs = likedNFTsSet
+        }
+    }
+    
+    private func saveLikedNFTs() {
+        if let likedNFTsData = try? JSONEncoder().encode(likedNFTs) {
+            UserDefaults.standard.set(likedNFTsData, forKey: "LikedNFTs")
+        }
+    }
+    
+    private func setupNotifications() {
+        NotificationCenter.default.addObserver(
+            self,
+            selector: #selector(likedNFTsDidChange),
+            name: .likedNFTsDidChange,
+            object: nil
+        )
+    }
+    
+    @objc private func likedNFTsDidChange() {
+        loadLikedNFTs()
+        tableView.reloadData()
     }
     
     private func updateUI() {
@@ -363,11 +398,11 @@ final class MyNFTViewController: UIViewController {
             
             if self.nfts.isEmpty {
                 self.emptyStateLabel.isHidden = false
-                self.collectionView.isHidden = true
+                self.tableView.isHidden = true
             } else {
                 self.emptyStateLabel.isHidden = true
-                self.collectionView.isHidden = false
-                self.collectionView.reloadData()
+                self.tableView.isHidden = false
+                self.tableView.reloadData()
             }
         }
     }
@@ -381,17 +416,14 @@ final class MyNFTViewController: UIViewController {
     @objc private func sortButtonTapped() {
         let alert = UIAlertController(title: "Сортировка", message: nil, preferredStyle: .actionSheet)
         
-        alert.addAction(UIAlertAction(title: "По цене", style: .default) { [weak self] _ in
-            self?.sortNFTs(by: .price)
-        })
-        
-        alert.addAction(UIAlertAction(title: "По рейтингу", style: .default) { [weak self] _ in
-            self?.sortNFTs(by: .rating)
-        })
-        
-        alert.addAction(UIAlertAction(title: "По названию", style: .default) { [weak self] _ in
-            self?.sortNFTs(by: .name)
-        })
+        // Add actions for each sort criteria
+        for criteria in SortCriteria.allCases {
+            let action = UIAlertAction(title: criteria.title, style: .default) { [weak self] _ in
+                self?.sortNFTs(by: criteria)
+            }
+            
+            alert.addAction(action)
+        }
         
         alert.addAction(UIAlertAction(title: "Отмена", style: .cancel))
         
@@ -399,7 +431,13 @@ final class MyNFTViewController: UIViewController {
     }
     
     private func sortNFTs(by criteria: SortCriteria) {
-        switch criteria {
+        currentSortCriteria = criteria
+        saveSortCriteria(criteria)
+        applyCurrentSort()
+    }
+    
+    private func applyCurrentSort() {
+        switch currentSortCriteria {
         case .price:
             nfts.sort { $0.price > $1.price }
         case .rating:
@@ -408,25 +446,59 @@ final class MyNFTViewController: UIViewController {
             nfts.sort { $0.name < $1.name }
         }
         
-        collectionView.reloadData()
+        tableView.reloadData()
     }
     
-    private enum SortCriteria {
-        case price, rating, name
+    // MARK: - UserDefaults
+    
+    private func saveSortCriteria(_ criteria: SortCriteria) {
+        UserDefaults.standard.set(criteria.rawValue, forKey: UserDefaultsKeys.selectedSortCriteria)
+    }
+    
+    private func loadSavedSortCriteria() {
+        if let savedCriteriaString = UserDefaults.standard.string(forKey: UserDefaultsKeys.selectedSortCriteria),
+           let savedCriteria = SortCriteria(rawValue: savedCriteriaString) {
+            currentSortCriteria = savedCriteria
+        }
+    }
+    
+    private enum SortCriteria: String, CaseIterable {
+        case price = "price"
+        case rating = "rating"
+        case name = "name"
+        
+        var title: String {
+            switch self {
+            case .price:
+                return "По цене"
+            case .rating:
+                return "По рейтингу"
+            case .name:
+                return "По названию"
+            }
+        }
+    }
+    
+    private enum UserDefaultsKeys {
+        static let selectedSortCriteria = "MyNFTSelectedSortCriteria"
     }
 }
 
-// MARK: - UICollectionViewDataSource
+// MARK: - UITableViewDataSource
 
-extension MyNFTViewController: UICollectionViewDataSource {
+extension MyNFTViewController: UITableViewDataSource {
     
-    func collectionView(_ collectionView: UICollectionView, numberOfItemsInSection section: Int) -> Int {
+    func numberOfSections(in tableView: UITableView) -> Int {
         return nfts.count
     }
     
-    func collectionView(_ collectionView: UICollectionView, cellForItemAt indexPath: IndexPath) -> UICollectionViewCell {
-        let cell: MyNFTCell = collectionView.dequeueReusableCell(indexPath: indexPath)
-        let nft = nfts[indexPath.item]
+    func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
+        return 1
+    }
+    
+    func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
+        let cell = tableView.dequeueReusableCell(withIdentifier: "MyNFTCell", for: indexPath) as! MyNFTCell
+        let nft = nfts[indexPath.section]
         let isLiked = likedNFTs.contains(nft.id)
         
         cell.configure(with: nft, isLiked: isLiked) { [weak self] (isLiked: Bool) in
@@ -435,17 +507,33 @@ extension MyNFTViewController: UICollectionViewDataSource {
             } else {
                 self?.likedNFTs.remove(nft.id)
             }
+            
+            // Save to UserDefaults
+            self?.saveLikedNFTs()
+            
+            // Post notification
+            NotificationCenter.default.post(name: .likedNFTsDidChange, object: nil)
         }
         
         return cell
     }
 }
 
-// MARK: - UICollectionViewDelegateFlowLayout
+// MARK: - UITableViewDelegate
 
-extension MyNFTViewController: UICollectionViewDelegateFlowLayout {
+extension MyNFTViewController: UITableViewDelegate {
     
-    func collectionView(_ collectionView: UICollectionView, layout collectionViewLayout: UICollectionViewLayout, sizeForItemAt indexPath: IndexPath) -> CGSize {
-        return CGSize(width: 320, height: 108)
+    func tableView(_ tableView: UITableView, heightForRowAt indexPath: IndexPath) -> CGFloat {
+        return 108
+    }
+    
+    func tableView(_ tableView: UITableView, viewForHeaderInSection section: Int) -> UIView? {
+        let headerView = UIView()
+        headerView.backgroundColor = .clear
+        return headerView
+    }
+    
+    func tableView(_ tableView: UITableView, heightForHeaderInSection section: Int) -> CGFloat {
+        return 16
     }
 }
