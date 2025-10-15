@@ -239,7 +239,7 @@ extension CatalogViewController: UITableViewDelegate {
         tableView.deselectRow(at: indexPath, animated: true)
         
         guard let collection = presenter?.collection(at: indexPath.row) else { return }
-        let collectionVC = CatalogCollectionViewController(collection: collection)
+        let collectionVC = CatalogCollectionViewController(collectionDetails: collection)
         navigationController?.pushViewController(collectionVC, animated: true)
     }
 }

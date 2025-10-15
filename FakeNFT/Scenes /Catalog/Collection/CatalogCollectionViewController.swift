@@ -13,7 +13,7 @@ final class CatalogCollectionViewController: UIViewController {
     
     // MARK: - Private Properties
     //private let collectionId: String
-    private var collection: CatalogCollectionNft
+    private var collectionDetails: CatalogCollectionNft
     private var nftCollectionCell: [NftCellModel] = []
     
     // MARK: - UI Elements
@@ -93,8 +93,8 @@ final class CatalogCollectionViewController: UIViewController {
     }()
     
     // MARK: - Init
-    init(collection: CatalogCollectionNft) {
-        self.collection = collection
+    init(collectionDetails: CatalogCollectionNft) {
+        self.collectionDetails = collectionDetails
         super.init(nibName: nil, bundle: nil)
     }
     
@@ -233,17 +233,17 @@ final class CatalogCollectionViewController: UIViewController {
     }
     
     private func saveLikeState(nftId: String, isLiked: Bool) {
-            // TODO: Заменить на реальное сохранение в сторедж/сервер
-            print("NFT \(nftId) like state: \(isLiked ? "liked" : "unliked")")
-            
-            // Мок-сохранение в UserDefaults
-            UserDefaults.standard.set(isLiked, forKey: "nft_like_\(nftId)")
-        }
+        // TODO: Заменить на реальное сохранение в сторедж/сервер
+        print("NFT \(nftId) like state: \(isLiked ? "liked" : "unliked")")
         
-        private func loadLikeState(nftId: String) -> Bool {
-            // TODO: Заменить на реальную загрузку из стореджа/сервера
-            return UserDefaults.standard.bool(forKey: "nft_like_\(nftId)")
-        }
+        // Мок-сохранение в UserDefaults
+        UserDefaults.standard.set(isLiked, forKey: "nft_like_\(nftId)")
+    }
+    
+    private func loadLikeState(nftId: String) -> Bool {
+        // TODO: Заменить на реальную загрузку из стореджа/сервера
+        return UserDefaults.standard.bool(forKey: "nft_like_\(nftId)")
+    }
     
     private func animateForButton(at index: Int) {
         guard let cell = collectionView.cellForItem(at: IndexPath(item: index, section: 0)) as? CatalogNftCollectionViewCell else { return }
@@ -274,18 +274,18 @@ final class CatalogCollectionViewController: UIViewController {
     }
     
     private func saveCartState(nftId: String, isInCart: Bool) {
-            // TODO: Заменить на реальное сохранение в сторедж/сервер
-            print("NFT \(nftId) like state: \(isInCart ? "cart" : "noCart")")
-            
-            // Мок-сохранение в UserDefaults
-            UserDefaults.standard.set(isInCart, forKey: "nft_cart_\(nftId)")
-        }
+        // TODO: Заменить на реальное сохранение в сторедж/сервер
+        print("NFT \(nftId) like state: \(isInCart ? "cart" : "noCart")")
         
-        private func loadCartState(nftId: String) -> Bool {
-            // TODO: Заменить на реальную загрузку
-            return UserDefaults.standard.bool(forKey: "nft_cart_\(nftId)")
-        }
-
+        // Мок-сохранение в UserDefaults
+        UserDefaults.standard.set(isInCart, forKey: "nft_cart_\(nftId)")
+    }
+    
+    private func loadCartState(nftId: String) -> Bool {
+        // TODO: Заменить на реальную загрузку
+        return UserDefaults.standard.bool(forKey: "nft_cart_\(nftId)")
+    }
+    
     
     // MARK: - Mock
     private func createMockNftCollections() -> [NftCellModel] {
@@ -339,13 +339,13 @@ extension CatalogCollectionViewController: UICollectionViewDataSource {
 extension CatalogCollectionViewController: UICollectionViewDelegateFlowLayout {
     
     func collectionView(_ collectionView: UICollectionView, layout collectionViewLayout: UICollectionViewLayout, referenceSizeForHeaderInSection section: Int) -> CGSize {
-          // Временная фиксированная высота, можно сделать динамической позже
-          return CGSize(width: collectionView.frame.width, height: 450)
-      }
+        // Временная фиксированная высота, можно сделать динамической позже
+        return CGSize(width: collectionView.frame.width, height: 450)
+    }
     
     func collectionView(_ collectionView: UICollectionView,
-                            layout collectionViewLayout: UICollectionViewLayout,
-                            sizeForItemAt indexPath: IndexPath) -> CGSize {
+                        layout collectionViewLayout: UICollectionViewLayout,
+                        sizeForItemAt indexPath: IndexPath) -> CGSize {
         let left: CGFloat = 16
         let right: CGFloat = 16
         let spacing: CGFloat = 9
@@ -353,7 +353,7 @@ extension CatalogCollectionViewController: UICollectionViewDelegateFlowLayout {
         let totalSpacing = left + right + spacing * (columns - 1)
         let cellWidth = (collectionView.bounds.width - totalSpacing) / columns
         return CGSize(width: cellWidth, height: 192)
-        }
+    }
     
     func collectionView(_ collectionView: UICollectionView, viewForSupplementaryElementOfKind kind: String, at indexPath: IndexPath) -> UICollectionReusableView {
         
@@ -365,10 +365,26 @@ extension CatalogCollectionViewController: UICollectionViewDelegateFlowLayout {
             ) as? CatalogCollectionSectionHeaderView else {
                 return UICollectionReusableView()
             }
-            header.configure(with: collection)
+            header.configure(with: collectionDetails)
+            
+            header.onAuthorTap = { [weak self] in
+                self?.openAuthorWebsite()
+            }
             
             return header
         }
         return UICollectionReusableView()
+    }
+    
+    private func openAuthorWebsite() {
+        let webViewVC = WebViewViewController()
+        
+        // Создаем URL запрос для сайта Практикума
+        if let url = URL(string: WebViewConstants.authorURLString) {
+            let request = URLRequest(url: url)
+            webViewVC.load(request: request)
+        }
+        
+        navigationController?.pushViewController(webViewVC, animated: true)
     }
 }

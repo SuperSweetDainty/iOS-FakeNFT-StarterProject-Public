@@ -11,6 +11,8 @@ final class CatalogCollectionSectionHeaderView: UICollectionReusableView {
     
     // MARK: - Static Properties
     static let identifier = "CatalogCollectionSectionHeaderView"
+    
+    var onAuthorTap: (() -> Void)?
         
     // MARK: - UI Elements
     private lazy var catalogImageView: UIImageView = {
@@ -48,6 +50,8 @@ final class CatalogCollectionSectionHeaderView: UICollectionReusableView {
         let label = UILabel()
         label.font = UIFont.caption1
         label.numberOfLines = 1
+        label.isUserInteractionEnabled = true
+        label.textColor = .systemBlue
         label.translatesAutoresizingMaskIntoConstraints = false
         
         return label
@@ -66,6 +70,7 @@ final class CatalogCollectionSectionHeaderView: UICollectionReusableView {
     override init(frame: CGRect) {
         super.init(frame: frame)
         setupUI()
+        setupAuthorInteraction()
     }
     
     required init?(coder: NSCoder) {
@@ -121,6 +126,24 @@ final class CatalogCollectionSectionHeaderView: UICollectionReusableView {
             descriptionLabel.bottomAnchor.constraint(equalTo: bottomAnchor)
         ])
     }
+    
+    private func setupAuthorInteraction() {
+            let authorTap = UITapGestureRecognizer(target: self, action: #selector(authorLabelTapped))
+            authorLinkLabel.addGestureRecognizer(authorTap)
+        }
+        
+        @objc private func authorLabelTapped() {
+            // Анимация для обратной связи
+            UIView.animate(withDuration: 0.1, animations: {
+                self.authorLinkLabel.alpha = 0.5
+            }) { _ in
+                UIView.animate(withDuration: 0.1) {
+                    self.authorLinkLabel.alpha = 1.0
+                }
+            }
+            
+            onAuthorTap?()
+        }
     
     
     func configure(with collection: CatalogCollectionNft) {
