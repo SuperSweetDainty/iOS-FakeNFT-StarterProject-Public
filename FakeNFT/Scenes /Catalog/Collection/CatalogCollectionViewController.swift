@@ -8,13 +8,23 @@
 import UIKit
 import ProgressHUD
 
+protocol CatalogCollectionViewControllerProtocol: AnyObject {
+    func displayCollections(_ collections: [NftCellModel])
+    func showLoading()
+    func hideLoading()
+    func showError(_ message: String)
+    func showEmptyState()
+    func showContentState()
+    func updateNFTLikeState(at index: Int, isLiked: Bool)
+    func updateNFTCartState(at index: Int, isInCart: Bool)
+}
 
-final class CatalogCollectionViewController: UIViewController {
+
+final class CatalogCollectionViewController: UIViewController, CatalogCollectionViewControllerProtocol, UIGestureRecognizerDelegate {
     
     // MARK: - Private Properties
-    //private let collectionId: String
     private var collectionDetails: CatalogCollectionNft
-    private var nftCollectionCell: [NftCellModel] = []
+    private var presenter: CatalogCollectionViewPresenterProtocol
     
     // MARK: - UI Elements
     private lazy var collectionView: UICollectionView = {
@@ -95,7 +105,9 @@ final class CatalogCollectionViewController: UIViewController {
     // MARK: - Init
     init(collectionDetails: CatalogCollectionNft) {
         self.collectionDetails = collectionDetails
+        self.presenter = CatalogCollectionViewPresenter(collectionDetails: collectionDetails)
         super.init(nibName: nil, bundle: nil)
+        self.presenter.view = self
     }
     
     required init?(coder: NSCoder) {
@@ -106,8 +118,10 @@ final class CatalogCollectionViewController: UIViewController {
     override func viewDidLoad() {
         super.viewDidLoad()
         setupUI()
-        setupObservers()
-        loadNFTs()
+        presenter.viewDidLoad()
+        
+        navigationController?.interactivePopGestureRecognizer?.delegate = self
+        navigationController?.interactivePopGestureRecognizer?.isEnabled = true
     }
     
     override func viewWillAppear(_ animated: Bool) {
@@ -120,12 +134,62 @@ final class CatalogCollectionViewController: UIViewController {
         navigationController?.setNavigationBarHidden(false, animated: false)
     }
     
+    //MARK: - IB Actions
+    @objc private func retryButtonTapped() {
+        presenter.didTapRetry()
+    }
+    
     //MARK: - Public Methods
+    func gestureRecognizerShouldBegin(_ gestureRecognizer: UIGestureRecognizer) -> Bool {
+        return (navigationController?.viewControllers.count ?? 0) > 1
+    }
+    
     func displayCollections(_ collections: [NftCellModel]) {
         collectionView.reloadData()
         showContentState()
     }
     
+    func showLoading(){
+        ProgressHUD.show()
+        
+        collectionView.isHidden = true
+        emptyStateStack.isHidden = true
+    }
+    
+    func hideLoading() {
+        ProgressHUD.dismiss()
+    }
+    
+    func showError(_ message: String) {
+        emptyStateStack.isHidden = false
+        collectionView.isHidden = true
+        emptyStateTitleLabel.text = "Ошибка загрузки"
+        emptyStateMessageLabel.text = message
+    }
+    
+    func showEmptyState() {
+        emptyStateStack.isHidden = false
+        collectionView.isHidden = true
+        emptyStateTitleLabel.text = "В коллекции пока нет NFT"
+    }
+    
+    func showContentState() {
+        emptyStateStack.isHidden = true
+        collectionView.isHidden = false
+        collectionView.reloadData()
+    }
+    
+    func updateNFTLikeState(at index: Int, isLiked: Bool) {
+        let indexPath = IndexPath(item: index, section: 0)
+        collectionView.reloadItems(at: [indexPath])
+    }
+    
+    func updateNFTCartState(at index: Int, isInCart: Bool) {
+        let indexPath = IndexPath(item: index, section: 0)
+        collectionView.reloadItems(at: [indexPath])
+    }
+    
+    // MARK: - Private Methods
     private func setupUI(){
         configureView()
         addSubviews()
@@ -157,115 +221,6 @@ final class CatalogCollectionViewController: UIViewController {
         ])
     }
     
-    private func setupObservers() {
-        NotificationCenter.default.addObserver(
-            self,
-            selector: #selector(handleLikeUpdate(_:)),
-            name: .nftLikeStateChanged,
-            object: nil
-        )
-        
-        NotificationCenter.default.addObserver(
-            self,
-            selector: #selector(handleCartUpdate(_:)),
-            name: .nftCartStateChanged,
-            object: nil
-        )
-    }
-    
-    private func loadNFTs() {
-        showLoading()
-        
-        // Имитация загрузки
-        DispatchQueue.main.asyncAfter(deadline: .now() + 2) { [weak self] in
-            guard let self = self else { return }
-            
-            let shouldFail = false // Для теста ошибка true
-            let isEmptyCollection = false // true - пустая коллекция
-            
-            if shouldFail {
-                self.showError("Нет удалось загрузить коллекцию")
-            }  else if isEmptyCollection {
-                self.nftCollectionCell = [] // Пустая коллекция
-                self.showEmptyState()
-            } else {
-                self.nftCollectionCell = self.createMockNftCollections()
-                self.showContentState()
-            }
-            
-            self.hideLoading()
-        }
-    }
-    
-    func showLoading(){
-        ProgressHUD.show()
-        
-        collectionView.isHidden = true
-        emptyStateStack.isHidden = true
-    }
-    
-    func hideLoading() {
-        ProgressHUD.dismiss()
-    }
-    
-    private func showError(_ message: String) {
-        emptyStateStack.isHidden = false
-        collectionView.isHidden = true
-        emptyStateTitleLabel.text = "Ошибка загрузки"
-        emptyStateMessageLabel.text = message
-    }
-    
-    @objc private func retryButtonTapped() {
-        loadNFTs()
-    }
-    
-    func showEmptyState() {
-        emptyStateStack.isHidden = false
-        collectionView.isHidden = true
-        emptyStateTitleLabel.text = "В коллекции пока нет NFT"
-    }
-    
-    private func showContentState() {
-        emptyStateStack.isHidden = true
-        collectionView.isHidden = false
-        collectionView.reloadData()
-    }
-    
-    private func handleLike(for nftId: String) {
-        guard let index = nftCollectionCell.firstIndex(where: { $0.id == nftId }) else { return }
-        
-        // Инвертируем состояние лайка
-        nftCollectionCell[index].isFavorite.toggle()
-        
-        // Обновляем только нужную ячейку
-        collectionView.reloadItems(at: [IndexPath(item: index, section: 0)])
-        
-        // Сохраняем состояние лайка (мок-реализация)
-        saveLikeState(nftId: nftId, isLiked: nftCollectionCell[index].isFavorite)
-        
-        // Анимация для обратной связи
-        animateForButton(at: index)
-    }
-    
-    private func saveLikeState(nftId: String, isLiked: Bool) {
-        // Мок-сохранение в UserDefaults
-        UserDefaults.standard.set(isLiked, forKey: "nft_like_\(nftId)")
-        
-        NotificationCenter.default.post(
-            name: .nftLikeStateChanged,
-            object: nil,
-            userInfo: ["nftId": nftId, "isLiked": isLiked]
-        )
-        
-        print("NFT \(nftId) like state: \(isLiked ? "liked" : "unliked")")
-        
-    }
-    
-    private func loadLikeState(nftId: String) -> Bool {
-        // TODO: Заменить на реальную загрузку из стореджа/сервера
-        return UserDefaults.standard.bool(forKey: "nft_like_\(nftId)")
-    }
-    
     private func animateForButton(at index: Int) {
         guard let cell = collectionView.cellForItem(at: IndexPath(item: index, section: 0)) as? CatalogNftCollectionViewCell else { return }
         
@@ -278,99 +233,21 @@ final class CatalogCollectionViewController: UIViewController {
         }
     }
     
-    private func handleCart(for nftId: String) {
-        guard let index = nftCollectionCell.firstIndex(where: { $0.id == nftId }) else { return }
+    private func openAuthorWebsite() {
+        let webViewVC = WebViewViewController()
         
-        // Инвертируем состояние лайка
-        nftCollectionCell[index].isInCart.toggle()
-        
-        // Обновляем только нужную ячейку
-        collectionView.reloadItems(at: [IndexPath(item: index, section: 0)])
-        
-        // Сохраняем состояние лайка (мок-реализация)
-        saveCartState(nftId: nftId, isInCart: nftCollectionCell[index].isFavorite)
-        
-        // Анимация для обратной связи
-        animateForButton(at: index)
-    }
-    
-    private func saveCartState(nftId: String, isInCart: Bool) {
-        // Мок-сохранение в UserDefaults
-        UserDefaults.standard.set(isInCart, forKey: "nft_cart_\(nftId)")
-        
-        NotificationCenter.default.post(
-            name: .nftCartStateChanged,
-            object: nil,
-            userInfo: ["nftId": nftId, "isInCart": isInCart]
-        )
-        
-        print("NFT \(nftId) like state: \(isInCart ? "cart" : "noCart")")
-    }
-    
-    private func loadCartState(nftId: String) -> Bool {
-        // TODO: Заменить на реальную загрузку
-        return UserDefaults.standard.bool(forKey: "nft_cart_\(nftId)")
-    }
-    
-    @objc private func handleLikeUpdate(_ notification: Notification) {
-        guard let userInfo = notification.userInfo,
-              let nftId = userInfo["nftId"] as? String,
-              let isLiked = userInfo["isLiked"] as? Bool,
-              let index = nftCollectionCell.firstIndex(where: { $0.id == nftId }) else { return }
-        
-        // Обновляем данные
-        nftCollectionCell[index].isFavorite = isLiked
-        
-        // Обновляем UI
-        DispatchQueue.main.async {
-            self.collectionView.reloadItems(at: [IndexPath(item: index, section: 0)])
+        if let url = URL(string: WebViewConstants.authorURLString) {
+            let request = URLRequest(url: url)
+            webViewVC.load(request: request)
         }
         
-        print("🔄 Like state updated from notification: NFT \(nftId) - \(isLiked ? "liked" : "unliked")")
-    }
-    
-    @objc private func handleCartUpdate(_ notification: Notification) {
-        guard let userInfo = notification.userInfo,
-              let nftId = userInfo["nftId"] as? String,
-              let isInCart = userInfo["isInCart"] as? Bool,
-              let index = nftCollectionCell.firstIndex(where: { $0.id == nftId }) else { return }
-        
-        // Обновляем данные
-        nftCollectionCell[index].isInCart = isInCart
-        
-        // Обновляем UI
-        DispatchQueue.main.async {
-            self.collectionView.reloadItems(at: [IndexPath(item: index, section: 0)])
-        }
-        
-        print("🔄 Cart state updated from notification: NFT \(nftId) - \(isInCart ? "in cart" : "removed from cart")")
-    }
-    
-    
-    
-    // MARK: - Mock
-    private func createMockNftCollections() -> [NftCellModel] {
-        let mockNFTs = [
-            NftCellModel(id: "1", name: "Archie", images: "nftCardsOne", rating: 2, price: 1, isFavorite: true, isInCart: false),
-            NftCellModel(id: "2", name: "Ruby", images: "nftCardsTwo", rating: 2, price: 2, isFavorite: true, isInCart: true),
-            NftCellModel(id: "3", name: "Nacho", images: "nftCardsThree", rating: 3, price: 1, isFavorite: false, isInCart: true),
-            NftCellModel(id: "4", name: "Biscuit", images: "nftCardsOne", rating: 2, price: 1, isFavorite: false, isInCart: true),
-            NftCellModel(id: "5", name: "Daisy", images: "nftCardsThree", rating: 1, price: 1, isFavorite: false, isInCart: true),
-            NftCellModel(id: "6", name: "Susan", images: "nftCardsTwo", rating: 2, price: 1, isFavorite: false, isInCart: true),
-            NftCellModel(id: "7", name: "Biscuit", images: "nftCardsOne", rating: 2, price: 1, isFavorite: false, isInCart: true),
-        ]
-        return mockNFTs.map { nft in
-            var updatedNft = nft
-            updatedNft.isFavorite = loadLikeState(nftId: nft.id)
-            updatedNft.isInCart = loadCartState(nftId: nft.id)
-            return updatedNft
-        }
+        navigationController?.pushViewController(webViewVC, animated: true)
     }
 }
 
 extension CatalogCollectionViewController: UICollectionViewDataSource {
     func collectionView(_ collectionView: UICollectionView, numberOfItemsInSection section: Int) -> Int {
-        nftCollectionCell.count
+        presenter.collectionsCount
     }
     
     func collectionView(_ collectionView: UICollectionView, cellForItemAt indexPath: IndexPath) -> UICollectionViewCell {
@@ -380,21 +257,21 @@ extension CatalogCollectionViewController: UICollectionViewDataSource {
             for: indexPath) as? CatalogNftCollectionViewCell else {
             return UICollectionViewCell()
         }
-        let nft = nftCollectionCell[indexPath.item]
+        let nft = presenter.collection(at: indexPath.item)
         cell.configure(with: nft)
         
         cell.onFavoriteButtonTapped = { [weak self] in
-            self?.handleLike(for: nft.id)
+            self?.presenter.didTapLike(for: nft.id)
+            self?.animateForButton(at: indexPath.item)
         }
         
         cell.onCartButtonTapped = { [weak self] in
-            self?.handleCart(for: nft.id)
+            self?.presenter.didTapCart(for: nft.id)
+            self?.animateForButton(at: indexPath.item)
         }
         
         return cell
     }
-    
-    
 }
 
 extension CatalogCollectionViewController: UICollectionViewDelegateFlowLayout {
@@ -434,19 +311,30 @@ extension CatalogCollectionViewController: UICollectionViewDelegateFlowLayout {
             
             return header
         }
+        
         return UICollectionReusableView()
     }
     
-    private func openAuthorWebsite() {
-        let webViewVC = WebViewViewController()
+    func collectionView(_ collectionView: UICollectionView, didSelectItemAt indexPath: IndexPath) {
+        collectionView.deselectItem(at: indexPath, animated: true)
         
-        // Создаем URL запрос для сайта Практикума
-        if let url = URL(string: WebViewConstants.authorURLString) {
-            let request = URLRequest(url: url)
-            webViewVC.load(request: request)
-        }
+        let nft = presenter.collection(at: indexPath.item)
         
-        navigationController?.pushViewController(webViewVC, animated: true)
+        let networkClient = DefaultNetworkClient()
+        let nftStorage = NftStorageImpl()
+        
+        let servicesAssembler = ServicesAssembly(
+            networkClient: networkClient,
+            nftStorage: nftStorage
+        )
+        let nftDetailAssembly = NftDetailAssembly(servicesAssembler: servicesAssembler)
+        
+        let input = NftDetailInput(id: nft.id)
+        
+        let detailNftVC = nftDetailAssembly.build(with: input)
+        
+        detailNftVC.modalPresentationStyle = .fullScreen
+        present(detailNftVC, animated: true)
     }
 }
 
