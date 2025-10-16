@@ -59,13 +59,21 @@ final class PayChoosingController: UIViewController {
         payButton.backgroundColor = .segmentActive.withAlphaComponent(0.3)
         payButton.layer.cornerRadius = 16
         payButton.isEnabled = false
+        payButton.addTarget(self, action: #selector(Self.buttonPay), for: .touchUpInside)
         return payButton
     }()
 
     // MARK: - init
-    init(servicesAssembly: ServicesAssembly) {
+    init(nfts: [Nft],
+          servicesAssembly: ServicesAssembly,
+          onSuccess: @escaping () -> Void) {
         super.init(nibName: nil, bundle: nil)
-        self.presenter = PayPresenter(view: self, networkService: servicesAssembly.cartNetworkClient)
+        self.presenter = PayPresenter(
+            view: self,
+            nfts: nfts,
+            onSuccess: onSuccess,
+            networkService: servicesAssembly.cartNetworkClient
+        )
     }
 
     required init?(coder: NSCoder) {
@@ -80,7 +88,17 @@ final class PayChoosingController: UIViewController {
         navigationItem.title = "Выберите способ оплаты"
         presenter?.viewDidLoad()
         setupConstraints()
-            }
+    }
+    
+    override func viewWillAppear(_ animated: Bool) {
+        super.viewWillAppear(animated)
+        tabBarController?.tabBar.isHidden = true
+    }
+
+    override func viewWillDisappear(_ animated: Bool) {
+        super.viewWillDisappear(animated)
+        tabBarController?.tabBar.isHidden = false
+    }
 
     // MARK: - Methods
     private func setupConstraints() {
@@ -120,6 +138,29 @@ final class PayChoosingController: UIViewController {
             payButton.heightAnchor.constraint(equalToConstant: 60),
             payButton.bottomAnchor.constraint(equalTo: view.safeAreaLayoutGuide.bottomAnchor, constant: -16),
         ])
+    }
+    
+    func presentSuccessScreen() {
+        let vc = PaymentSuccessfully()
+        navigationController?.pushViewController(vc, animated: true)
+    }
+
+    func showRetryAlert(retryAction: @escaping () -> Void) {
+        let alert = UIAlertController(
+            title: "Не удалось произвести\nоплату",
+            message: nil,
+            preferredStyle: .alert
+        )
+        alert.addAction(UIAlertAction(title: "Отмена", style: .cancel, handler: nil))
+        alert.addAction(UIAlertAction(title: "Повторить", style: .default, handler: { _ in
+            retryAction()
+        }))
+        present(alert, animated: true, completion: nil)
+    }
+    
+    @objc
+    private func buttonPay() {
+        presenter?.pay()
     }
 
     @objc

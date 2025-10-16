@@ -23,7 +23,7 @@ class MockDataForCart: PresenterCartProtocol {
         
         return [
             Nft(
-                id: "1",
+                id: "1e649115-1d4f-4026-ad56-9551a16763ee",
                 name: "Emma",
                 rating: 1,
                 images: [
@@ -34,8 +34,8 @@ class MockDataForCart: PresenterCartProtocol {
                 price: 28.82
             ),
             Nft(
-                id: "2",
-                name: "Lark",
+                id: "7773e33c-ec15-4230-a102-92426a3a6d5a",
+                name: "Beige",
                 rating: 3,
                 images: [
                     safeUrl("https://code.s3.yandex.net/Mobile/iOS/NFT/Beige/Lark/1.png").url,
@@ -45,7 +45,7 @@ class MockDataForCart: PresenterCartProtocol {
                 price: 49.64
             ),
             Nft(
-                id: "3",
+                id: "c14cf3bc-7470-4eec-8a42-5eaa65f4053c",
                 name: "Ellsa",
                 rating: 5,
                 images: [

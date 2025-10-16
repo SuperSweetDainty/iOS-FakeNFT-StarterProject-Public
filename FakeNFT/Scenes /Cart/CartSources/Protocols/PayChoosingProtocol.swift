@@ -11,4 +11,6 @@ protocol PayChoosingProtocol: AnyObject {
     func showLoading()
     func hideLoading()
     func payUpdate(with coins: [Coin])
+    func presentSuccessScreen()
+    func showRetryAlert(retryAction: @escaping () -> Void)
 }

@@ -91,6 +91,16 @@ final class CartController: UIViewController, UpdateCartProtocol {
         presenter?.viewDidLoad()
         setupCart()
     }
+    
+    override func viewWillAppear(_ animated: Bool) {
+        super.viewWillAppear(animated)
+        navigationController?.setNavigationBarHidden(true, animated: animated)
+    }
+    
+    override func viewWillDisappear(_ animated: Bool) {
+        super.viewWillDisappear(animated)
+        navigationController?.setNavigationBarHidden(false, animated: animated)
+    }
 
     // MARK: - Methods
     private func setupCart() {
@@ -159,6 +169,11 @@ final class CartController: UIViewController, UpdateCartProtocol {
         tableView.reloadData()
     }
     
+    func nftUpdate(with nfts: [Nft]) {
+        self.arrayNfts = nfts
+        pageReload()
+    }
+    
     @objc
     private func cartSorting() {
         let alertController = UIAlertController(title: "Сортировка", message: nil, preferredStyle: .actionSheet)
@@ -185,7 +200,10 @@ final class CartController: UIViewController, UpdateCartProtocol {
     
     @objc
     private func forPayment() {
-        let payChoosingVC = PayChoosingController(servicesAssembly: servicesAssembly)
+        let payChoosingVC = PayChoosingController(nfts: arrayNfts, servicesAssembly: servicesAssembly) { [weak self] in
+            self?.arrayNfts.removeAll()
+            self?.pageReload()
+        }
         payChoosingVC.navigationItem.leftBarButtonItem = UIBarButtonItem(
             image: UIImage(resource: .chevronBackward),
             style: .plain,
@@ -202,11 +220,7 @@ final class CartController: UIViewController, UpdateCartProtocol {
     private func goBack() {
         navigationController?.popViewController(animated: true)
     }
-    
-    func nftUpdate(with nfts: [Nft]) {
-        self.arrayNfts = nfts
-        pageReload()
-    }
+
 }
 
 // MARK: - UITableViewDataSource

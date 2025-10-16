@@ -28,7 +28,6 @@ final class TabBarController: UITabBarController {
             servicesAssembly: servicesAssembly
         )
         
-        //cartController.tabBarItem = cartTabBarItem
         let navigationController = UINavigationController(rootViewController: cartController)
         navigationController.modalPresentationStyle = .fullScreen
         navigationController.tabBarItem = cartTabBarItem

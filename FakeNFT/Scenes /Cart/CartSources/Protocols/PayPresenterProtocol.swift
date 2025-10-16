@@ -9,4 +9,5 @@ import Foundation
 
 protocol PayPresenterProtocol {
     func viewDidLoad()
+    func pay()
 }

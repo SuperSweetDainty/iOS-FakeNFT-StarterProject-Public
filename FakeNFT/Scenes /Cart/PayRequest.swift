@@ -12,5 +12,5 @@ struct PayRequest: NetworkRequest {
     var httpMethod: HttpMethod = .get
     var endpoint: URL? {
         URL(string: RequestConstants.paymentURL)
-    } 
+    }
 }
