@@ -105,8 +105,8 @@ final class CatalogCollectionViewController: UIViewController {
     // MARK: - Lifecycle
     override func viewDidLoad() {
         super.viewDidLoad()
-        
         setupUI()
+        setupObservers()
         loadNFTs()
     }
     
@@ -157,6 +157,22 @@ final class CatalogCollectionViewController: UIViewController {
         ])
     }
     
+    private func setupObservers() {
+        NotificationCenter.default.addObserver(
+            self,
+            selector: #selector(handleLikeUpdate(_:)),
+            name: .nftLikeStateChanged,
+            object: nil
+        )
+        
+        NotificationCenter.default.addObserver(
+            self,
+            selector: #selector(handleCartUpdate(_:)),
+            name: .nftCartStateChanged,
+            object: nil
+        )
+    }
+    
     private func loadNFTs() {
         showLoading()
         
@@ -203,7 +219,6 @@ final class CatalogCollectionViewController: UIViewController {
         loadNFTs()
     }
     
-    
     func showEmptyState() {
         emptyStateStack.isHidden = false
         collectionView.isHidden = true
@@ -233,11 +248,17 @@ final class CatalogCollectionViewController: UIViewController {
     }
     
     private func saveLikeState(nftId: String, isLiked: Bool) {
-        // TODO: Заменить на реальное сохранение в сторедж/сервер
-        print("NFT \(nftId) like state: \(isLiked ? "liked" : "unliked")")
-        
         // Мок-сохранение в UserDefaults
         UserDefaults.standard.set(isLiked, forKey: "nft_like_\(nftId)")
+        
+        NotificationCenter.default.post(
+            name: .nftLikeStateChanged,
+            object: nil,
+            userInfo: ["nftId": nftId, "isLiked": isLiked]
+        )
+        
+        print("NFT \(nftId) like state: \(isLiked ? "liked" : "unliked")")
+        
     }
     
     private func loadLikeState(nftId: String) -> Bool {
@@ -274,17 +295,57 @@ final class CatalogCollectionViewController: UIViewController {
     }
     
     private func saveCartState(nftId: String, isInCart: Bool) {
-        // TODO: Заменить на реальное сохранение в сторедж/сервер
-        print("NFT \(nftId) like state: \(isInCart ? "cart" : "noCart")")
-        
         // Мок-сохранение в UserDefaults
         UserDefaults.standard.set(isInCart, forKey: "nft_cart_\(nftId)")
+        
+        NotificationCenter.default.post(
+            name: .nftCartStateChanged,
+            object: nil,
+            userInfo: ["nftId": nftId, "isInCart": isInCart]
+        )
+        
+        print("NFT \(nftId) like state: \(isInCart ? "cart" : "noCart")")
     }
     
     private func loadCartState(nftId: String) -> Bool {
         // TODO: Заменить на реальную загрузку
         return UserDefaults.standard.bool(forKey: "nft_cart_\(nftId)")
     }
+    
+    @objc private func handleLikeUpdate(_ notification: Notification) {
+        guard let userInfo = notification.userInfo,
+              let nftId = userInfo["nftId"] as? String,
+              let isLiked = userInfo["isLiked"] as? Bool,
+              let index = nftCollectionCell.firstIndex(where: { $0.id == nftId }) else { return }
+        
+        // Обновляем данные
+        nftCollectionCell[index].isFavorite = isLiked
+        
+        // Обновляем UI
+        DispatchQueue.main.async {
+            self.collectionView.reloadItems(at: [IndexPath(item: index, section: 0)])
+        }
+        
+        print("🔄 Like state updated from notification: NFT \(nftId) - \(isLiked ? "liked" : "unliked")")
+    }
+    
+    @objc private func handleCartUpdate(_ notification: Notification) {
+        guard let userInfo = notification.userInfo,
+              let nftId = userInfo["nftId"] as? String,
+              let isInCart = userInfo["isInCart"] as? Bool,
+              let index = nftCollectionCell.firstIndex(where: { $0.id == nftId }) else { return }
+        
+        // Обновляем данные
+        nftCollectionCell[index].isInCart = isInCart
+        
+        // Обновляем UI
+        DispatchQueue.main.async {
+            self.collectionView.reloadItems(at: [IndexPath(item: index, section: 0)])
+        }
+        
+        print("🔄 Cart state updated from notification: NFT \(nftId) - \(isInCart ? "in cart" : "removed from cart")")
+    }
+    
     
     
     // MARK: - Mock
@@ -387,4 +448,9 @@ extension CatalogCollectionViewController: UICollectionViewDelegateFlowLayout {
         
         navigationController?.pushViewController(webViewVC, animated: true)
     }
+}
+
+extension Notification.Name {
+    static let nftLikeStateChanged = Notification.Name("NFTLikeStateChanged")
+    static let nftCartStateChanged = Notification.Name("NFTCartStateChanged")
 }
