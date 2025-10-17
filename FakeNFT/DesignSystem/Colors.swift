@@ -43,6 +43,7 @@ extension UIColor {
     static let textOnSecondary = UIColor.black
     static let greenUniversal = UIColor(hexString: "#1C9F00")
     static let yellowUniversal = UIColor(hexString: "#FEEF0D")
+    static let blueUniversal = UIColor(hexString: "#0A84FF")
     static let redUniversal = UIColor(hexString: "#F56B6C")
 
     private static let yaBlackLight = UIColor(hexString: "1A1B22")

@@ -11,6 +11,7 @@ final class CartController: UIViewController, UpdateCartProtocol {
     // MARK: - Properties
     private var arrayNfts: [Nft] = []
     private var presenter: PresenterCartProtocol?
+    private var servicesAssembly: ServicesAssembly
     
     private lazy var tableView: UITableView = {
         let tableView = UITableView()
@@ -45,6 +46,7 @@ final class CartController: UIViewController, UpdateCartProtocol {
         thePayButton.setTitleColor(.white, for: .normal)
         thePayButton.backgroundColor = .segmentActive
         thePayButton.layer.cornerRadius = 16
+        thePayButton.addTarget(self, action: #selector(Self.forPayment), for: .touchUpInside)
         return thePayButton
     }()
     
@@ -72,6 +74,7 @@ final class CartController: UIViewController, UpdateCartProtocol {
 
     // MARK: - init
     init(servicesAssembly: ServicesAssembly) {
+        self.servicesAssembly = servicesAssembly
         super.init(nibName: nil, bundle: nil)
         self.presenter = MockDataForCart(view: self, networkService: servicesAssembly.cartNetworkClient)
         
@@ -87,6 +90,16 @@ final class CartController: UIViewController, UpdateCartProtocol {
         view.backgroundColor = .systemBackground
         presenter?.viewDidLoad()
         setupCart()
+    }
+    
+    override func viewWillAppear(_ animated: Bool) {
+        super.viewWillAppear(animated)
+        navigationController?.setNavigationBarHidden(true, animated: animated)
+    }
+    
+    override func viewWillDisappear(_ animated: Bool) {
+        super.viewWillDisappear(animated)
+        navigationController?.setNavigationBarHidden(false, animated: animated)
     }
 
     // MARK: - Methods
@@ -156,6 +169,11 @@ final class CartController: UIViewController, UpdateCartProtocol {
         tableView.reloadData()
     }
     
+    func nftUpdate(with nfts: [Nft]) {
+        self.arrayNfts = nfts
+        pageReload()
+    }
+    
     @objc
     private func cartSorting() {
         let alertController = UIAlertController(title: "Сортировка", message: nil, preferredStyle: .actionSheet)
@@ -180,10 +198,29 @@ final class CartController: UIViewController, UpdateCartProtocol {
         present(alertController, animated: true)
     }
     
-    func nftUpdate(with nfts: [Nft]) {
-        self.arrayNfts = nfts
-        pageReload()
+    @objc
+    private func forPayment() {
+        let payChoosingVC = PayChoosingController(nfts: arrayNfts, servicesAssembly: servicesAssembly) { [weak self] in
+            self?.arrayNfts.removeAll()
+            self?.pageReload()
+        }
+        payChoosingVC.navigationItem.leftBarButtonItem = UIBarButtonItem(
+            image: UIImage(resource: .chevronBackward),
+            style: .plain,
+            target: self,
+            action: #selector(goBack)
+        )
+        payChoosingVC.navigationItem.leftBarButtonItem?.tintColor = .segmentActive
+        
+        navigationController?.pushViewController(payChoosingVC, animated: true)
     }
+    
+    
+    @objc
+    private func goBack() {
+        navigationController?.popViewController(animated: true)
+    }
+
 }
 
 // MARK: - UITableViewDataSource

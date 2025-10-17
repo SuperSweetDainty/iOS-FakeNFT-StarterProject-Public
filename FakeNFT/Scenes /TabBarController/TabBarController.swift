@@ -27,9 +27,12 @@ final class TabBarController: UITabBarController {
         let cartController = CartController(
             servicesAssembly: servicesAssembly
         )
-        cartController.tabBarItem = cartTabBarItem
+        
+        let navigationController = UINavigationController(rootViewController: cartController)
+        navigationController.modalPresentationStyle = .fullScreen
+        navigationController.tabBarItem = cartTabBarItem
 
-        viewControllers = [catalogController, cartController]
+        viewControllers = [catalogController, navigationController]
 
         view.backgroundColor = .systemBackground
         tabBar.unselectedItemTintColor = .segmentActive

@@ -30,9 +30,10 @@ final class CartPresenter {
             guard let self else { return }
             switch result {
             case .success(let response):
+                print(response)
                 self.view?.nftUpdate(with: response.nfts)
-                case .failure:
-                   break    
+                case .failure(let error):
+                print(error)
             }
         }
     }
