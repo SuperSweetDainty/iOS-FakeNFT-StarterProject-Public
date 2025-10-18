@@ -11,7 +11,7 @@ struct CatalogCollectionNft {
     let id: String
     let name: String
     let nftCount: Int
-    let imageURL: String? 
+    let imageURL: String?
     
     //TODO: - Для моков
     init(id: String, name: String, nftCount: Int, imageURL: String? = nil) {

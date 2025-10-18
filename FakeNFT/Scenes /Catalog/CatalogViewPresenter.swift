@@ -11,7 +11,6 @@ protocol CatalogViewPresenterProtocol: AnyObject {
     var view: CatalogViewControllerProtocol? { get set }
     func viewDidLoad()
     func didSelectSortOption(_ option: SortOption)
-    func didSelectCollection(at index: Int)
     func didTapRetry()
     
     var collectionsCount: Int { get }
@@ -44,12 +43,6 @@ final class CatalogViewPresenter: CatalogViewPresenterProtocol {
         currentSortOption = option
         currentSortOption.save()
         applySorting()
-    }
-    
-    func didSelectCollection(at index: Int) {
-        guard collectionsNft.indices.contains(index) else { return }
-        let collection = collectionsNft[index]
-        view?.navigateToCollectionDetail(collectionId: collection.id)
     }
     
     func didTapRetry() {
@@ -91,10 +84,10 @@ final class CatalogViewPresenter: CatalogViewPresenterProtocol {
     private func createMockCollections() -> [CatalogCollectionNft] {
         return [
             CatalogCollectionNft(id: "1", name: "Коллекция 1", nftCount: 5, imageURL: "collectionOne"),
-            CatalogCollectionNft(id: "2", name: "Коллекция 2", nftCount: 3,  imageURL: "collectionTwo"),
-            CatalogCollectionNft(id: "3", name: "Коллекция 3", nftCount: 7,  imageURL: "collectionThree"),
+            CatalogCollectionNft(id: "2", name: "Коллекция 2", nftCount: 3,  imageURL: "collectionOne"),
+            CatalogCollectionNft(id: "3", name: "Коллекция 3", nftCount: 7,  imageURL: "collectionOne"),
             CatalogCollectionNft(id: "4", name: "Коллекция 4", nftCount: 2,  imageURL:  "collectionOne"),
-            CatalogCollectionNft(id: "5", name: "Коллекция 5", nftCount: 8,  imageURL: "collectionThree")
+            CatalogCollectionNft(id: "5", name: "Коллекция 5", nftCount: 8,  imageURL: "collectionOne")
         ]
     }
 }
