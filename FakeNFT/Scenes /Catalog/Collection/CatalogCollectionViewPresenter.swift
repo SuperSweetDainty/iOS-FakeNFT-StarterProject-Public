@@ -17,7 +17,7 @@ protocol CatalogCollectionViewPresenterProtocol {
     func didTapRetry()
 }
 
-class CatalogCollectionViewPresenter: CatalogCollectionViewPresenterProtocol {
+final class CatalogCollectionViewPresenter: CatalogCollectionViewPresenterProtocol {
     
     //MARK: -Public Properties
     weak var view: CatalogCollectionViewControllerProtocol?

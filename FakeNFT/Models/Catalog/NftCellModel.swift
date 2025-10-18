@@ -15,7 +15,13 @@ struct NftCellModel {
     var isFavorite: Bool
     var isInCart: Bool
     
-    init(id: String, name: String, images: String, rating: Int, price: Int, isFavorite: Bool, isInCart: Bool) {
+    init(id: String,
+         name: String,
+         images: String,
+         rating: Int,
+         price: Int,
+         isFavorite: Bool,
+         isInCart: Bool) {
         self.id = id
         self.name = name
         self.images = [images]

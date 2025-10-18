@@ -20,7 +20,7 @@ protocol CatalogCollectionViewControllerProtocol: AnyObject {
 }
 
 
-final class CatalogCollectionViewController: UIViewController, CatalogCollectionViewControllerProtocol, UIGestureRecognizerDelegate {
+final class CatalogCollectionViewController: UIViewController, CatalogCollectionViewControllerProtocol {
     
     // MARK: - Private Properties
     private var collectionDetails: CatalogCollectionNft
@@ -140,9 +140,6 @@ final class CatalogCollectionViewController: UIViewController, CatalogCollection
     }
     
     //MARK: - Public Methods
-    func gestureRecognizerShouldBegin(_ gestureRecognizer: UIGestureRecognizer) -> Bool {
-        return (navigationController?.viewControllers.count ?? 0) > 1
-    }
     
     func displayCollections(_ collections: [NftCellModel]) {
         collectionView.reloadData()
@@ -335,6 +332,12 @@ extension CatalogCollectionViewController: UICollectionViewDelegateFlowLayout {
         
         detailNftVC.modalPresentationStyle = .fullScreen
         present(detailNftVC, animated: true)
+    }
+}
+
+extension CatalogCollectionViewController: UIGestureRecognizerDelegate {
+    func gestureRecognizerShouldBegin(_ gestureRecognizer: UIGestureRecognizer) -> Bool {
+        return (navigationController?.viewControllers.count ?? 0) > 1
     }
 }
 

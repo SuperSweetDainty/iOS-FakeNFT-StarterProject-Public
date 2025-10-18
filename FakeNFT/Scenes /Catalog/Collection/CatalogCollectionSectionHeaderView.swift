@@ -13,7 +13,7 @@ final class CatalogCollectionSectionHeaderView: UICollectionReusableView {
     static let identifier = "CatalogCollectionSectionHeaderView"
     
     var onAuthorTap: (() -> Void)?
-        
+    
     // MARK: - UI Elements
     private lazy var catalogImageView: UIImageView = {
         let image = UIImageView()
@@ -78,15 +78,15 @@ final class CatalogCollectionSectionHeaderView: UICollectionReusableView {
     }
     
     override func preferredLayoutAttributesFitting(_ layoutAttributes: UICollectionViewLayoutAttributes) -> UICollectionViewLayoutAttributes {
-            setNeedsLayout()
-            layoutIfNeeded()
-            let targetSize = CGSize(width: layoutAttributes.size.width, height: UIView.layoutFittingCompressedSize.height)
-            let size = systemLayoutSizeFitting(targetSize,
-                                               withHorizontalFittingPriority: .required,
-                                               verticalFittingPriority: .fittingSizeLevel)
-            layoutAttributes.size.height = size.height
-            return layoutAttributes
-        }
+        setNeedsLayout()
+        layoutIfNeeded()
+        let targetSize = CGSize(width: layoutAttributes.size.width, height: UIView.layoutFittingCompressedSize.height)
+        let size = systemLayoutSizeFitting(targetSize,
+                                           withHorizontalFittingPriority: .required,
+                                           verticalFittingPriority: .fittingSizeLevel)
+        layoutAttributes.size.height = size.height
+        return layoutAttributes
+    }
     
     private func setupUI(){
         addSubviews()
@@ -128,22 +128,22 @@ final class CatalogCollectionSectionHeaderView: UICollectionReusableView {
     }
     
     private func setupAuthorInteraction() {
-            let authorTap = UITapGestureRecognizer(target: self, action: #selector(authorLabelTapped))
-            authorLinkLabel.addGestureRecognizer(authorTap)
+        let authorTap = UITapGestureRecognizer(target: self, action: #selector(authorLabelTapped))
+        authorLinkLabel.addGestureRecognizer(authorTap)
+    }
+    
+    @objc private func authorLabelTapped() {
+        // Анимация для обратной связи
+        UIView.animate(withDuration: 0.1, animations: {
+            self.authorLinkLabel.alpha = 0.5
+        }) { _ in
+            UIView.animate(withDuration: 0.1) {
+                self.authorLinkLabel.alpha = 1.0
+            }
         }
         
-        @objc private func authorLabelTapped() {
-            // Анимация для обратной связи
-            UIView.animate(withDuration: 0.1, animations: {
-                self.authorLinkLabel.alpha = 0.5
-            }) { _ in
-                UIView.animate(withDuration: 0.1) {
-                    self.authorLinkLabel.alpha = 1.0
-                }
-            }
-            
-            onAuthorTap?()
-        }
+        onAuthorTap?()
+    }
     
     
     func configure(with collection: CatalogCollectionNft) {
