@@ -32,12 +32,11 @@ final class MyNFTCell: UITableViewCell, ReuseIdentifying {
         let button = UIButton(type: .custom)
         button.setImage(UIImage(resource: .heart), for: .normal)
         button.setImage(UIImage(resource: .heartFill), for: .selected)
-        button.tintColor = .white // обычный цвет - белый
+        button.tintColor = .white
         button.addTarget(self, action: #selector(likeButtonTapped), for: .touchUpInside)
         button.translatesAutoresizingMaskIntoConstraints = false
         return button
     }()
-    
     
     private lazy var nameLabel: UILabel = {
         let label = UILabel()
@@ -108,47 +107,37 @@ final class MyNFTCell: UITableViewCell, ReuseIdentifying {
     
     private func setupConstraints() {
         NSLayoutConstraint.activate([
-            // Container view
             containerView.topAnchor.constraint(equalTo: contentView.topAnchor),
             containerView.leadingAnchor.constraint(equalTo: contentView.leadingAnchor),
             containerView.trailingAnchor.constraint(equalTo: contentView.trailingAnchor),
             containerView.bottomAnchor.constraint(equalTo: contentView.bottomAnchor),
             
-            // NFT Image - слева от ячейки (16 от экрана)
             nftImageView.topAnchor.constraint(equalTo: containerView.topAnchor),
             nftImageView.leadingAnchor.constraint(equalTo: containerView.leadingAnchor, constant: 16),
             nftImageView.widthAnchor.constraint(equalToConstant: 108),
             nftImageView.heightAnchor.constraint(equalToConstant: 108),
             
-            // Like button
             likeButton.topAnchor.constraint(equalTo: nftImageView.topAnchor, constant: 8),
             likeButton.trailingAnchor.constraint(equalTo: nftImageView.trailingAnchor, constant: -8),
             likeButton.widthAnchor.constraint(equalToConstant: 24),
             likeButton.heightAnchor.constraint(equalToConstant: 24),
             
-            // Name label - прикован к левому верхнему краю container view, 20 слева от NFT изображения, 23 сверху от границы ячейки
             nameLabel.topAnchor.constraint(equalTo: containerView.topAnchor, constant: 23),
             nameLabel.leadingAnchor.constraint(equalTo: nftImageView.trailingAnchor, constant: 20),
             
-            // Rating stack view - 0 слева от container view (относительно NFT изображения + 20), 4 сверху от name label
             ratingStackView.topAnchor.constraint(equalTo: nameLabel.bottomAnchor, constant: 4),
             ratingStackView.leadingAnchor.constraint(equalTo: nftImageView.trailingAnchor, constant: 20),
             
-            // Author label - 0 слева от container view (относительно NFT изображения + 20), 4 сверху от rating
             authorLabel.topAnchor.constraint(equalTo: ratingStackView.bottomAnchor, constant: 4),
             authorLabel.leadingAnchor.constraint(equalTo: nftImageView.trailingAnchor, constant: 20),
             
-            // Price label - 39 слева от author, 10 сверху от границы container view (относительно NFT изображения + 20)
-            priceLabel.topAnchor.constraint(equalTo: containerView.topAnchor, constant: 33), // 23 + 10
+            priceLabel.topAnchor.constraint(equalTo: containerView.topAnchor, constant: 33),
             priceLabel.leadingAnchor.constraint(equalTo: authorLabel.trailingAnchor, constant: 39),
             
-            // Price value label - на 2 вниз от price label, на 1 влево от него
             priceValueLabel.topAnchor.constraint(equalTo: priceLabel.bottomAnchor, constant: 2),
             priceValueLabel.leadingAnchor.constraint(equalTo: priceLabel.leadingAnchor, constant: -1)
         ])
     }
-    
-    // MARK: - Configuration
     
     func configure(with nft: Nft, isLiked: Bool, onLikeTapped: @escaping (Bool) -> Void) {
         self.isLiked = isLiked
@@ -158,45 +147,26 @@ final class MyNFTCell: UITableViewCell, ReuseIdentifying {
         authorLabel.text = "от \(nft.author)"
         priceValueLabel.text = "\(nft.price) ETH"
         
-        // Set NFT image based on name
         switch nft.name {
-        case "Lilo":
-            nftImageView.image = UIImage(resource: .lilo)
-        case "Spring":
-            nftImageView.image = UIImage(resource: .spring)
-        case "April":
-            nftImageView.image = UIImage(resource: .april)
-        case "Pixi":
-            nftImageView.image = UIImage(resource: .pixi)
-        case "Melissa":
-            nftImageView.image = UIImage(resource: .melissa)
-        case "Daisy":
-            nftImageView.image = UIImage(resource: .daisy)
-        case "Archie":
-            nftImageView.image = UIImage(resource: .archie)
-        default:
-            nftImageView.image = UIImage(resource: .lilo)
+        case "Lilo": nftImageView.image = UIImage(resource: .lilo)
+        case "Spring": nftImageView.image = UIImage(resource: .spring)
+        case "April": nftImageView.image = UIImage(resource: .april)
+        case "Pixi": nftImageView.image = UIImage(resource: .pixi)
+        case "Melissa": nftImageView.image = UIImage(resource: .melissa)
+        case "Daisy": nftImageView.image = UIImage(resource: .daisy)
+        case "Archie": nftImageView.image = UIImage(resource: .archie)
+        default: nftImageView.image = UIImage(resource: .lilo)
         }
         
-        // Configure like button
         likeButton.isSelected = isLiked
+        likeButton.tintColor = isLiked ? UIColor(hexString: "F56B6C") : .white
         
-        // Устанавливаем правильный цвет кнопки
-        if isLiked {
-            likeButton.tintColor = UIColor(hexString: "F56B6C") // красный цвет для активного состояния
-        } else {
-            likeButton.tintColor = .white // белый цвет для обычного состояния
-        }
-        
-        // Configure rating
         setupRatingStars(rating: nft.rating)
     }
     
     private func setupRatingStars(rating: Int) {
-        // Clear existing stars
         ratingStackView.arrangedSubviews.forEach { $0.removeFromSuperview() }
         
-        // Add stars
         for i in 1...5 {
             let starImageView = UIImageView()
             starImageView.image = UIImage(systemName: i <= rating ? "star.fill" : "star")
@@ -213,33 +183,24 @@ final class MyNFTCell: UITableViewCell, ReuseIdentifying {
         }
     }
     
-    // MARK: - Actions
-    
     @objc private func likeButtonTapped() {
         isLiked.toggle()
         likeButton.isSelected = isLiked
-        
-        // Меняем цвет кнопки в зависимости от состояния
-        if isLiked {
-            likeButton.tintColor = UIColor(hexString: "F56B6C") // красный цвет для активного состояния
-        } else {
-            likeButton.tintColor = .white // белый цвет для обычного состояния
-        }
-        
+        likeButton.tintColor = isLiked ? UIColor(hexString: "F56B6C") : .white
         onLikeTapped?(isLiked)
     }
 }
 
 // MARK: - MyNFTViewController
 
-final class MyNFTViewController: UIViewController, LoadingView {
+final class MyNFTViewController: UIViewController {
     
     // MARK: - Properties
     
+    private let presenter: MyNFTPresenter
+    private let servicesAssembly: ServicesAssembly
     private var nfts: [Nft] = []
     private var likedNFTs: Set<String> = []
-    private var currentSortCriteria: SortCriteria = .price
-    private var isLoading: Bool = false
     
     // MARK: - UI Elements
     
@@ -250,10 +211,7 @@ final class MyNFTViewController: UIViewController, LoadingView {
         tableView.backgroundColor = .background
         tableView.showsVerticalScrollIndicator = false
         tableView.separatorStyle = .none
-        
-        // Register cells
         tableView.register(MyNFTCell.self, forCellReuseIdentifier: "MyNFTCell")
-        
         return tableView
     }()
     
@@ -268,12 +226,24 @@ final class MyNFTViewController: UIViewController, LoadingView {
         return label
     }()
     
-    internal lazy var activityIndicator: UIActivityIndicatorView = {
+    private lazy var activityIndicator: UIActivityIndicatorView = {
         let indicator = UIActivityIndicatorView(style: .large)
         indicator.hidesWhenStopped = true
         indicator.translatesAutoresizingMaskIntoConstraints = false
         return indicator
     }()
+    
+    // MARK: - Init
+    
+    init(servicesAssembly: ServicesAssembly, presenter: MyNFTPresenter) {
+        self.servicesAssembly = servicesAssembly
+        self.presenter = presenter
+        super.init(nibName: nil, bundle: nil)
+    }
+    
+    required init?(coder: NSCoder) {
+        fatalError("init(coder:) has not been implemented")
+    }
     
     // MARK: - Lifecycle
     
@@ -283,7 +253,7 @@ final class MyNFTViewController: UIViewController, LoadingView {
         setupNavigationBar()
         setupConstraints()
         setupNotifications()
-        loadNFTs()
+        presenter.viewDidLoad()
     }
     
     deinit {
@@ -300,13 +270,11 @@ final class MyNFTViewController: UIViewController, LoadingView {
             view.addSubview($0)
         }
         
-        // Initially hide table view and empty label
         tableView.isHidden = true
         emptyStateLabel.isHidden = true
     }
     
     private func setupNavigationBar() {
-        // Back button
         navigationItem.leftBarButtonItem = UIBarButtonItem(
             image: UIImage(systemName: "chevron.left"),
             style: .plain,
@@ -315,10 +283,8 @@ final class MyNFTViewController: UIViewController, LoadingView {
         )
         navigationItem.leftBarButtonItem?.tintColor = UIColor(hexString: "1A1B22")
         
-        // Title
         navigationItem.title = "Мои NFT"
         
-        // Sort button
         let sortButton = UIBarButtonItem(
             image: UIImage(resource: .vector),
             style: .plain,
@@ -346,120 +312,6 @@ final class MyNFTViewController: UIViewController, LoadingView {
         ])
     }
     
-    // MARK: - Data Loading
-    
-    private func loadNFTs() {
-        guard !isLoading else { return }
-        isLoading = true
-        showLoading()
-        
-        // Имитация асинхронной загрузки данных
-        DispatchQueue.global().async { [weak self] in
-            guard let self = self else { return }
-            
-            // Имитация задержки сети
-            Thread.sleep(forTimeInterval: 0.5)
-            
-            let nfts = self.fetchNFTData()
-            
-            DispatchQueue.main.async {
-                self.isLoading = false
-                self.hideLoading()
-                self.nfts = nfts
-                
-                // Load liked NFTs from UserDefaults
-                self.loadLikedNFTs()
-                
-                // Load saved sort criteria and apply it
-                self.loadSavedSortCriteria()
-                self.applyCurrentSort()
-                
-                self.updateUI()
-            }
-        }
-    }
-    
-    private func fetchNFTData() -> [Nft] {
-        // Create test NFT data
-        let liloNFT = Nft(
-            id: "1",
-            name: "Lilo",
-            price: 1.78,
-            rating: 3,
-            images: [URL(string: "https://example.com/lilo.png")!],
-            author: "John Doe"
-        )
-        
-        let springNFT = Nft(
-            id: "2",
-            name: "Spring",
-            price: 1.78,
-            rating: 3,
-            images: [URL(string: "https://example.com/spring.png")!],
-            author: "John Doe"
-        )
-        
-        let aprilNFT = Nft(
-            id: "3",
-            name: "April",
-            price: 1.78,
-            rating: 3,
-            images: [URL(string: "https://example.com/april.png")!],
-            author: "John Doe"
-        )
-        
-        let archieNFT = Nft(
-            id: "4",
-            name: "Archie",
-            price: 1.78,
-            rating: 3,
-            images: [URL(string: "https://example.com/archie.png")!],
-            author: "John Doe"
-        )
-        
-        let pixiNFT = Nft(
-            id: "5",
-            name: "Pixi",
-            price: 1.78,
-            rating: 3,
-            images: [URL(string: "https://example.com/pixi.png")!],
-            author: "John Doe"
-        )
-        
-        let melissaNFT = Nft(
-            id: "6",
-            name: "Melissa",
-            price: 1.78,
-            rating: 5,
-            images: [URL(string: "https://example.com/melissa.png")!],
-            author: "John Doe"
-        )
-        
-        let daisyNFT = Nft(
-            id: "7",
-            name: "Daisy",
-            price: 1.78,
-            rating: 1,
-            images: [URL(string: "https://example.com/daisy.png")!],
-            author: "John Doe"
-        )
-        
-        return [liloNFT, springNFT, aprilNFT, archieNFT, pixiNFT, melissaNFT, daisyNFT]
-    }
-    
-    private func loadLikedNFTs() {
-        if let likedNFTsData = UserDefaults.standard.data(forKey: "LikedNFTs"),
-           let likedNFTsSet = try? JSONDecoder().decode(Set<String>.self, from: likedNFTsData) {
-            likedNFTs = likedNFTsSet
-        }
-    }
-    
-    private func saveLikedNFTs() {
-        if let likedNFTsData = try? JSONEncoder().encode(likedNFTs) {
-            UserDefaults.standard.set(likedNFTsData, forKey: "LikedNFTs")
-        }
-    }
-    
     private func setupNotifications() {
         NotificationCenter.default.addObserver(
             self,
@@ -469,27 +321,6 @@ final class MyNFTViewController: UIViewController, LoadingView {
         )
     }
     
-    @objc private func likedNFTsDidChange() {
-        loadLikedNFTs()
-        tableView.reloadData()
-    }
-    
-    private func updateUI() {
-        DispatchQueue.main.async { [weak self] in
-            guard let self = self else { return }
-            
-            // Show content after loading
-            if self.nfts.isEmpty {
-                self.emptyStateLabel.isHidden = false
-                self.tableView.isHidden = true
-            } else {
-                self.emptyStateLabel.isHidden = true
-                self.tableView.isHidden = false
-                self.tableView.reloadData()
-            }
-        }
-    }
-    
     // MARK: - Actions
     
     @objc private func backButtonTapped() {
@@ -497,73 +328,59 @@ final class MyNFTViewController: UIViewController, LoadingView {
     }
     
     @objc private func sortButtonTapped() {
+        presenter.didTapSort()
+    }
+    
+    @objc private func likedNFTsDidChange() {
+        tableView.reloadData()
+    }
+}
+
+// MARK: - MyNFTView
+
+extension MyNFTViewController: MyNFTView {
+    
+    func displayNFTs(_ nfts: [Nft], likedNFTs: Set<String>) {
+        self.nfts = nfts
+        self.likedNFTs = likedNFTs
+        
+        tableView.isHidden = false
+        emptyStateLabel.isHidden = true
+        tableView.reloadData()
+    }
+    
+    func showEmptyState() {
+        tableView.isHidden = true
+        emptyStateLabel.isHidden = false
+    }
+    
+    func showLoading() {
+        activityIndicator.startAnimating()
+    }
+    
+    func hideLoading() {
+        activityIndicator.stopAnimating()
+    }
+    
+    func showSortOptions(_ options: [MyNFTSortCriteria]) {
         let alert = UIAlertController(title: "Сортировка", message: nil, preferredStyle: .actionSheet)
         
-        // Add actions for each sort criteria
-        for criteria in SortCriteria.allCases {
+        for criteria in options {
             let action = UIAlertAction(title: criteria.title, style: .default) { [weak self] _ in
-                self?.sortNFTs(by: criteria)
+                self?.presenter.sortNFTs(by: criteria)
             }
-            
             alert.addAction(action)
         }
         
         alert.addAction(UIAlertAction(title: "Отмена", style: .cancel))
-        
         present(alert, animated: true)
     }
     
-    private func sortNFTs(by criteria: SortCriteria) {
-        currentSortCriteria = criteria
-        saveSortCriteria(criteria)
-        applyCurrentSort()
-    }
-    
-    private func applyCurrentSort() {
-        switch currentSortCriteria {
-        case .price:
-            nfts.sort { $0.price > $1.price }
-        case .rating:
-            nfts.sort { $0.rating > $1.rating }
-        case .name:
-            nfts.sort { $0.name < $1.name }
-        }
-        
-        tableView.reloadData()
-    }
-    
-    // MARK: - UserDefaults
-    
-    private func saveSortCriteria(_ criteria: SortCriteria) {
-        UserDefaults.standard.set(criteria.rawValue, forKey: UserDefaultsKeys.selectedSortCriteria)
-    }
-    
-    private func loadSavedSortCriteria() {
-        if let savedCriteriaString = UserDefaults.standard.string(forKey: UserDefaultsKeys.selectedSortCriteria),
-           let savedCriteria = SortCriteria(rawValue: savedCriteriaString) {
-            currentSortCriteria = savedCriteria
-        }
-    }
-    
-    private enum SortCriteria: String, CaseIterable {
-        case price = "price"
-        case rating = "rating"
-        case name = "name"
-        
-        var title: String {
-            switch self {
-            case .price:
-                return "По цене"
-            case .rating:
-                return "По рейтингу"
-            case .name:
-                return "По названию"
-            }
-        }
-    }
-    
-    private enum UserDefaultsKeys {
-        static let selectedSortCriteria = "MyNFTSelectedSortCriteria"
+    func openNFTDetail(with id: String) {
+        let assembly = NftDetailAssembly(servicesAssembler: servicesAssembly)
+        let input = NftDetailInput(id: id)
+        let nftDetailViewController = assembly.build(with: input)
+        present(nftDetailViewController, animated: true)
     }
 }
 
@@ -585,17 +402,7 @@ extension MyNFTViewController: UITableViewDataSource {
         let isLiked = likedNFTs.contains(nft.id)
         
         cell.configure(with: nft, isLiked: isLiked) { [weak self] (isLiked: Bool) in
-            if isLiked {
-                self?.likedNFTs.insert(nft.id)
-            } else {
-                self?.likedNFTs.remove(nft.id)
-            }
-            
-            // Save to UserDefaults
-            self?.saveLikedNFTs()
-            
-            // Post notification
-            NotificationCenter.default.post(name: .likedNFTsDidChange, object: nil)
+            self?.presenter.didToggleLike(for: nft.id, isLiked: isLiked)
         }
         
         return cell
@@ -619,4 +426,10 @@ extension MyNFTViewController: UITableViewDelegate {
     func tableView(_ tableView: UITableView, heightForHeaderInSection section: Int) -> CGFloat {
         return 16
     }
+    
+    func tableView(_ tableView: UITableView, didSelectRowAt indexPath: IndexPath) {
+        tableView.deselectRow(at: indexPath, animated: true)
+        presenter.didSelectNFT(at: indexPath.section)
+    }
 }
+
