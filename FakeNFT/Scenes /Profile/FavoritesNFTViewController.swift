@@ -1,27 +1,52 @@
 import UIKit
 
-final class FavoritesNFTViewController: UIViewController {
+final class FavoritesNFTViewController: UIViewController, LoadingView {
     
     // MARK: - Properties
     
     private var allNFTs: [Nft] = []
     private var likedNFTs: Set<String> = []
     private var favoriteNFTs: [Nft] = []
+    private var isLoading: Bool = false
+    
+    // MARK: - Error Types
+    
+    enum NFTLoadError: Error {
+        case networkError
+        case dataParsingError
+        case unknown
+        
+        var localizedDescription: String {
+            switch self {
+            case .networkError:
+                return "Ошибка загрузки данных"
+            case .dataParsingError:
+                return "Ошибка обработки данных"
+            case .unknown:
+                return "Неизвестная ошибка"
+            }
+        }
+    }
     
     // MARK: - UI Elements
     
-    private lazy var tableView: UITableView = {
-        let tableView = UITableView(frame: .zero, style: .plain)
-        tableView.delegate = self
-        tableView.dataSource = self
-        tableView.backgroundColor = .background
-        tableView.showsVerticalScrollIndicator = false
-        tableView.separatorStyle = .none
+    private lazy var collectionView: UICollectionView = {
+        let layout = UICollectionViewFlowLayout()
+        layout.scrollDirection = .vertical
+        layout.minimumInteritemSpacing = 7 // Горизонтальный отступ между ячейками
+        layout.minimumLineSpacing = 20 // Вертикальный отступ между ячейками
+        layout.sectionInset = UIEdgeInsets(top: 20, left: 16, bottom: 20, right: 16) // Отступы коллекции
+        
+        let collectionView = UICollectionView(frame: .zero, collectionViewLayout: layout)
+        collectionView.delegate = self
+        collectionView.dataSource = self
+        collectionView.backgroundColor = .background
+        collectionView.showsVerticalScrollIndicator = false
         
         // Register cells
-        tableView.register(MyNFTCell.self, forCellReuseIdentifier: "MyNFTCell")
+        collectionView.register(FavoritesNFTCollectionViewCell.self)
         
-        return tableView
+        return collectionView
     }()
     
     private lazy var emptyStateLabel: UILabel = {
@@ -33,6 +58,13 @@ final class FavoritesNFTViewController: UIViewController {
         label.numberOfLines = 0
         label.isHidden = true
         return label
+    }()
+    
+    internal lazy var activityIndicator: UIActivityIndicatorView = {
+        let indicator = UIActivityIndicatorView(style: .large)
+        indicator.hidesWhenStopped = true
+        indicator.translatesAutoresizingMaskIntoConstraints = false
+        return indicator
     }()
     
     // MARK: - Lifecycle
@@ -55,10 +87,14 @@ final class FavoritesNFTViewController: UIViewController {
     private func setupUI() {
         view.backgroundColor = .background
         
-        [tableView, emptyStateLabel].forEach {
+        [collectionView, emptyStateLabel, activityIndicator].forEach {
             $0.translatesAutoresizingMaskIntoConstraints = false
             view.addSubview($0)
         }
+        
+        // Initially hide collection view and empty label
+        collectionView.isHidden = true
+        emptyStateLabel.isHidden = true
     }
     
     private func setupNavigationBar() {
@@ -77,15 +113,18 @@ final class FavoritesNFTViewController: UIViewController {
     
     private func setupConstraints() {
         NSLayoutConstraint.activate([
-            tableView.topAnchor.constraint(equalTo: view.safeAreaLayoutGuide.topAnchor),
-            tableView.leadingAnchor.constraint(equalTo: view.leadingAnchor),
-            tableView.trailingAnchor.constraint(equalTo: view.trailingAnchor),
-            tableView.bottomAnchor.constraint(equalTo: view.bottomAnchor),
+            collectionView.topAnchor.constraint(equalTo: view.safeAreaLayoutGuide.topAnchor),
+            collectionView.leadingAnchor.constraint(equalTo: view.leadingAnchor),
+            collectionView.trailingAnchor.constraint(equalTo: view.trailingAnchor),
+            collectionView.bottomAnchor.constraint(equalTo: view.bottomAnchor),
             
             emptyStateLabel.centerXAnchor.constraint(equalTo: view.centerXAnchor),
             emptyStateLabel.centerYAnchor.constraint(equalTo: view.centerYAnchor),
             emptyStateLabel.leadingAnchor.constraint(greaterThanOrEqualTo: view.leadingAnchor, constant: 16),
-            emptyStateLabel.trailingAnchor.constraint(lessThanOrEqualTo: view.trailingAnchor, constant: -16)
+            emptyStateLabel.trailingAnchor.constraint(lessThanOrEqualTo: view.trailingAnchor, constant: -16),
+            
+            activityIndicator.centerXAnchor.constraint(equalTo: view.centerXAnchor),
+            activityIndicator.centerYAnchor.constraint(equalTo: view.centerYAnchor)
         ])
     }
     
@@ -101,6 +140,59 @@ final class FavoritesNFTViewController: UIViewController {
     // MARK: - Data Loading
     
     private func loadData() {
+        guard !isLoading else { return }
+        isLoading = true
+        
+        // Показываем индикатор загрузки
+        showLoading()
+        
+        // Имитация асинхронной загрузки данных
+        DispatchQueue.global().async { [weak self] in
+            guard let self = self else { return }
+            
+            // Имитация задержки сети
+            Thread.sleep(forTimeInterval: 0.5)
+            
+            // Для тестирования: можно раскомментировать, чтобы имитировать ошибку
+            // let shouldSimulateError = Bool.random()
+            let shouldSimulateError = false
+            
+            if shouldSimulateError {
+                DispatchQueue.main.async {
+                    self.isLoading = false
+                    self.hideLoading()
+                    self.handleLoadError(.networkError)
+                }
+                return
+            }
+            
+            do {
+                let nfts = try self.fetchNFTData()
+                
+                DispatchQueue.main.async {
+                    self.isLoading = false
+                    self.hideLoading()
+                    self.allNFTs = nfts
+                    
+                    // Load liked NFTs from UserDefaults
+                    self.loadLikedNFTs()
+                    
+                    // Filter favorite NFTs
+                    self.updateFavoriteNFTs()
+                    
+                    self.updateUI()
+                }
+            } catch {
+                DispatchQueue.main.async {
+                    self.isLoading = false
+                    self.hideLoading()
+                    self.handleLoadError(error as? NFTLoadError ?? .unknown)
+                }
+            }
+        }
+    }
+    
+    private func fetchNFTData() throws -> [Nft] {
         // Load test NFT data (same as in MyNFTViewController)
         let liloNFT = Nft(
             id: "1",
@@ -129,15 +221,47 @@ final class FavoritesNFTViewController: UIViewController {
             author: "John Doe"
         )
         
-        allNFTs = [liloNFT, springNFT, aprilNFT]
+        let archieNFT = Nft(
+            id: "4",
+            name: "Archie",
+            price: 1.78,
+            rating: 3,
+            images: [URL(string: "https://example.com/archie.png")!],
+            author: "John Doe"
+        )
         
-        // Load liked NFTs from UserDefaults
-        loadLikedNFTs()
+        let pixiNFT = Nft(
+            id: "5",
+            name: "Pixi",
+            price: 1.78,
+            rating: 3,
+            images: [URL(string: "https://example.com/pixi.png")!],
+            author: "John Doe"
+        )
         
-        // Filter favorite NFTs
-        updateFavoriteNFTs()
+        let melissaNFT = Nft(
+            id: "6",
+            name: "Melissa",
+            price: 1.78,
+            rating: 5,
+            images: [URL(string: "https://example.com/melissa.png")!],
+            author: "John Doe"
+        )
         
-        updateUI()
+        let daisyNFT = Nft(
+            id: "7",
+            name: "Daisy",
+            price: 1.78,
+            rating: 1,
+            images: [URL(string: "https://example.com/daisy.png")!],
+            author: "John Doe"
+        )
+        
+        return [liloNFT, springNFT, aprilNFT, archieNFT, pixiNFT, melissaNFT, daisyNFT]
+    }
+    
+    private func handleLoadError(_ error: NFTLoadError) {
+        showErrorAlert(message: error.localizedDescription)
     }
     
     private func loadLikedNFTs() {
@@ -155,13 +279,14 @@ final class FavoritesNFTViewController: UIViewController {
         DispatchQueue.main.async { [weak self] in
             guard let self = self else { return }
             
+            // Show content after loading
             if self.favoriteNFTs.isEmpty {
                 self.emptyStateLabel.isHidden = false
-                self.tableView.isHidden = true
+                self.collectionView.isHidden = true
             } else {
                 self.emptyStateLabel.isHidden = true
-                self.tableView.isHidden = false
-                self.tableView.reloadData()
+                self.collectionView.isHidden = false
+                self.collectionView.reloadData()
             }
         }
     }
@@ -177,23 +302,40 @@ final class FavoritesNFTViewController: UIViewController {
         updateFavoriteNFTs()
         updateUI()
     }
+    
+    // MARK: - Error Handling
+    
+    private func showErrorAlert(message: String) {
+        let alert = UIAlertController(
+            title: "Ошибка",
+            message: message,
+            preferredStyle: .alert
+        )
+        
+        let retryAction = UIAlertAction(title: "Повторить", style: .default) { [weak self] _ in
+            self?.loadData()
+        }
+        
+        let cancelAction = UIAlertAction(title: "Отмена", style: .cancel)
+        
+        alert.addAction(retryAction)
+        alert.addAction(cancelAction)
+        
+        present(alert, animated: true)
+    }
 }
 
-// MARK: - UITableViewDataSource
+// MARK: - UICollectionViewDataSource
 
-extension FavoritesNFTViewController: UITableViewDataSource {
+extension FavoritesNFTViewController: UICollectionViewDataSource {
     
-    func numberOfSections(in tableView: UITableView) -> Int {
+    func collectionView(_ collectionView: UICollectionView, numberOfItemsInSection section: Int) -> Int {
         return favoriteNFTs.count
     }
     
-    func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
-        return 1
-    }
-    
-    func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
-        let cell = tableView.dequeueReusableCell(withIdentifier: "MyNFTCell", for: indexPath) as! MyNFTCell
-        let nft = favoriteNFTs[indexPath.section]
+    func collectionView(_ collectionView: UICollectionView, cellForItemAt indexPath: IndexPath) -> UICollectionViewCell {
+        let cell: FavoritesNFTCollectionViewCell = collectionView.dequeueReusableCell(indexPath: indexPath)
+        let nft = favoriteNFTs[indexPath.item]
         let isLiked = likedNFTs.contains(nft.id)
         
         cell.configure(with: nft, isLiked: isLiked) { [weak self] (isLiked: Bool) in
@@ -218,32 +360,30 @@ extension FavoritesNFTViewController: UITableViewDataSource {
     }
 }
 
-// MARK: - UITableViewDelegate
+// MARK: - UICollectionViewDelegateFlowLayout
 
-extension FavoritesNFTViewController: UITableViewDelegate {
+extension FavoritesNFTViewController: UICollectionViewDelegateFlowLayout {
     
-    func tableView(_ tableView: UITableView, heightForRowAt indexPath: IndexPath) -> CGFloat {
-        return 108
-    }
-    
-    func tableView(_ tableView: UITableView, viewForHeaderInSection section: Int) -> UIView? {
-        let headerView = UIView()
-        headerView.backgroundColor = .clear
-        return headerView
-    }
-    
-    func tableView(_ tableView: UITableView, heightForHeaderInSection section: Int) -> CGFloat {
-        return 16
-    }
-    
-    func tableView(_ tableView: UITableView, viewForFooterInSection section: Int) -> UIView? {
-        let footerView = UIView()
-        footerView.backgroundColor = .clear
-        return footerView
-    }
-    
-    func tableView(_ tableView: UITableView, heightForFooterInSection section: Int) -> CGFloat {
-        return 16
+    func collectionView(_ collectionView: UICollectionView, layout collectionViewLayout: UICollectionViewLayout, sizeForItemAt indexPath: IndexPath) -> CGSize {
+        // Ширина экрана
+        let screenWidth = collectionView.bounds.width
+        
+        // Отступы коллекции (16 слева + 16 справа)
+        let sectionInsets: CGFloat = 16 * 2
+        
+        // Отступ между ячейками (7)
+        let interItemSpacing: CGFloat = 7
+        
+        // Доступная ширина для двух ячеек
+        let availableWidth = screenWidth - sectionInsets - interItemSpacing
+        
+        // Ширина одной ячейки
+        let itemWidth = availableWidth / 2
+        
+        // Высота ячейки (80 для изображения, но можно сделать побольше для контейнера)
+        let itemHeight: CGFloat = 80
+        
+        return CGSize(width: itemWidth, height: itemHeight)
     }
 }
 
