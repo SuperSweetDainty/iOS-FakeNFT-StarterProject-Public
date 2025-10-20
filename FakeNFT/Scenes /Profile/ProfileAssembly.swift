@@ -13,7 +13,7 @@ public final class ProfileAssembly {
             input: input,
             service: servicesAssembler.profileService
         )
-        let viewController = ProfileViewController(presenter: presenter)
+        let viewController = ProfileViewController(presenter: presenter, servicesAssembly: servicesAssembler)
         presenter.view = viewController
         
         // Wrap in navigation controller for navigation support

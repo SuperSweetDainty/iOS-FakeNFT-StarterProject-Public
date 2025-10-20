@@ -5,6 +5,7 @@ final class ProfileViewController: UIViewController {
     // MARK: - Properties
     
     private let presenter: ProfilePresenter
+    private let servicesAssembly: ServicesAssembly
     private var user: User?
     var currentAvatarImage: UIImage?
     
@@ -33,8 +34,9 @@ final class ProfileViewController: UIViewController {
     
     // MARK: - Init
     
-    init(presenter: ProfilePresenter) {
+    init(presenter: ProfilePresenter, servicesAssembly: ServicesAssembly) {
         self.presenter = presenter
+        self.servicesAssembly = servicesAssembly
         super.init(nibName: nil, bundle: nil)
     }
     
@@ -55,7 +57,6 @@ final class ProfileViewController: UIViewController {
     override func viewWillAppear(_ animated: Bool) {
         super.viewWillAppear(animated)
         
-        // Show navigation bar only if profile is already loaded (returning from sub-screens)
         if user != nil {
             navigationController?.setNavigationBarHidden(false, animated: true)
         }
@@ -76,7 +77,6 @@ final class ProfileViewController: UIViewController {
             view.addSubview($0)
         }
         
-        // Initially hide table view and show loading indicator
         tableView.isHidden = true
         activityIndicator.startAnimating()
         
@@ -84,11 +84,9 @@ final class ProfileViewController: UIViewController {
     }
     
     private func setupNavigationBar() {
-        // Hide the default back button and title
         navigationItem.title = nil
         navigationItem.hidesBackButton = true
         
-        // Add edit button to the right side of navigation bar
         let editButton = UIBarButtonItem(
             image: UIImage(resource: .editButton),
             style: .plain,
@@ -135,22 +133,16 @@ extension ProfileViewController: ProfileView {
     func displayProfile(_ user: User) {
         self.user = user
         DispatchQueue.main.async { [weak self] in
-            // Hide loading indicator and show table view
             self?.activityIndicator.stopAnimating()
             self?.tableView.isHidden = false
             self?.tableView.reloadData()
-            
-            // Show navigation bar only after profile loads successfully
             self?.navigationController?.setNavigationBarHidden(false, animated: true)
         }
     }
     
     func showEmptyState() {
         DispatchQueue.main.async { [weak self] in
-            // Hide loading indicator
             self?.activityIndicator.stopAnimating()
-            
-            // Hide navigation bar on error state
             self?.navigationController?.setNavigationBarHidden(true, animated: true)
             
             let alert = UIAlertController(
@@ -160,7 +152,6 @@ extension ProfileViewController: ProfileView {
             )
             
             alert.addAction(UIAlertAction(title: "Повторить", style: .default) { _ in
-                // Show loading indicator again and restart loading
                 self?.activityIndicator.startAnimating()
                 self?.tableView.isHidden = true
                 self?.presenter.viewDidLoad()
@@ -197,7 +188,6 @@ extension ProfileViewController: ProfileView {
     }
     
     private func updateAvatarInHeaderCell(_ image: UIImage?) {
-        // Find the ProfileHeaderCell and update its avatar
         if let headerCell = tableView.cellForRow(at: IndexPath(row: 0, section: 0)) as? ProfileHeaderCell {
             headerCell.updateAvatar(image)
         }
@@ -220,11 +210,9 @@ extension ProfileViewController: ProfileView {
         
         DispatchQueue.main.async { [weak self] in
             if let newAvatarImage = imageDict["image"] as? UIImage {
-                // Avatar was changed to a new image
                 self?.currentAvatarImage = newAvatarImage
                 self?.updateAvatarInHeaderCell(newAvatarImage)
             } else if imageDict["image"] is NSNull {
-                // Avatar was removed
                 self?.currentAvatarImage = nil
                 self?.updateAvatarInHeaderCell(nil)
             }
@@ -264,11 +252,9 @@ extension ProfileViewController: UITableViewDataSource {
                     }
                 )
                 
-                // Apply current avatar image if available, otherwise let configure handle it
                 if let currentAvatarImage = currentAvatarImage {
                     cell.updateAvatar(currentAvatarImage)
                 } else {
-                    // Ensure system icon is set when no current avatar
                     cell.updateAvatar(nil)
                 }
             }
@@ -333,12 +319,16 @@ extension ProfileViewController: UITableViewDelegate {
 extension ProfileViewController {
     
     func navigateToMyNFTs() {
-        let myNFTViewController = MyNFTViewController()
+        let presenter = MyNFTPresenterImpl(servicesAssembly: servicesAssembly)
+        let myNFTViewController = MyNFTViewController(servicesAssembly: servicesAssembly, presenter: presenter)
+        presenter.view = myNFTViewController
         navigationController?.pushViewController(myNFTViewController, animated: true)
     }
     
     func navigateToFavoriteNFTs() {
-        let favoritesNFTViewController = FavoritesNFTViewController()
+        let presenter = FavoritesNFTPresenterImpl(servicesAssembly: servicesAssembly)
+        let favoritesNFTViewController = FavoritesNFTViewController(servicesAssembly: servicesAssembly, presenter: presenter)
+        presenter.view = favoritesNFTViewController
         navigationController?.pushViewController(favoritesNFTViewController, animated: true)
     }
 }
