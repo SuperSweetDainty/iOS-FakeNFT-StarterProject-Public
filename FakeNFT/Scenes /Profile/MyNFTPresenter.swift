@@ -61,6 +61,8 @@ final class MyNFTPresenterImpl: MyNFTPresenter {
     private var nfts: [Nft] = []
     private var likedNFTs: Set<String> = []
     private var currentSortCriteria: MyNFTSortCriteria = .price
+    private let jsonDecoder = JSONDecoder()
+    private let jsonEncoder = JSONEncoder()
     private var state = MyNFTState.initial {
         didSet {
             stateDidChanged()
@@ -136,12 +138,7 @@ final class MyNFTPresenterImpl: MyNFTPresenter {
             
             DispatchQueue.main.async {
                 self.loadLikedNFTs()
-                
-                if nfts.isEmpty {
-                    self.state = .empty
-                } else {
-                    self.state = .loaded(nfts)
-                }
+                self.state = nfts.isEmpty ? .empty : .loaded(nfts)
             }
         }
     }
@@ -178,13 +175,13 @@ final class MyNFTPresenterImpl: MyNFTPresenter {
     
     private func loadLikedNFTs() {
         if let likedNFTsData = UserDefaults.standard.data(forKey: "LikedNFTs"),
-           let likedNFTsSet = try? JSONDecoder().decode(Set<String>.self, from: likedNFTsData) {
+           let likedNFTsSet = try? jsonDecoder.decode(Set<String>.self, from: likedNFTsData) {
             likedNFTs = likedNFTsSet
         }
     }
     
     private func saveLikedNFTs() {
-        if let likedNFTsData = try? JSONEncoder().encode(likedNFTs) {
+        if let likedNFTsData = try? jsonEncoder.encode(likedNFTs) {
             UserDefaults.standard.set(likedNFTsData, forKey: "LikedNFTs")
         }
     }

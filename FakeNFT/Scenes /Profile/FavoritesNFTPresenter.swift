@@ -59,6 +59,8 @@ final class FavoritesNFTPresenterImpl: FavoritesNFTPresenter {
     private var allNFTs: [Nft] = []
     private var favoriteNFTs: [Nft] = []
     private var likedNFTs: Set<String> = []
+    private let jsonDecoder = JSONDecoder()
+    private let jsonEncoder = JSONEncoder()
     private var state = FavoritesNFTState.initial {
         didSet {
             stateDidChanged()
@@ -128,11 +130,13 @@ final class FavoritesNFTPresenterImpl: FavoritesNFTPresenter {
             guard let self = self else { return }
             
             let nfts = self.createTestNFTs()
+            let likedNFTs = self.loadLikedNFTsSync()
+            let favoriteNFTs = nfts.filter { likedNFTs.contains($0.id) }
             
             DispatchQueue.main.async {
                 self.allNFTs = nfts
-                self.loadLikedNFTs()
-                self.updateFavoriteNFTs()
+                self.likedNFTs = likedNFTs
+                self.favoriteNFTs = favoriteNFTs
                 
                 if self.favoriteNFTs.isEmpty {
                     self.state = .empty
@@ -171,13 +175,21 @@ final class FavoritesNFTPresenterImpl: FavoritesNFTPresenter {
     
     private func loadLikedNFTs() {
         if let likedNFTsData = UserDefaults.standard.data(forKey: "LikedNFTs"),
-           let likedNFTsSet = try? JSONDecoder().decode(Set<String>.self, from: likedNFTsData) {
+           let likedNFTsSet = try? jsonDecoder.decode(Set<String>.self, from: likedNFTsData) {
             likedNFTs = likedNFTsSet
         }
     }
     
+    private func loadLikedNFTsSync() -> Set<String> {
+        if let likedNFTsData = UserDefaults.standard.data(forKey: "LikedNFTs"),
+           let likedNFTsSet = try? jsonDecoder.decode(Set<String>.self, from: likedNFTsData) {
+            return likedNFTsSet
+        }
+        return []
+    }
+    
     private func saveLikedNFTs() {
-        if let likedNFTsData = try? JSONEncoder().encode(likedNFTs) {
+        if let likedNFTsData = try? jsonEncoder.encode(likedNFTs) {
             UserDefaults.standard.set(likedNFTsData, forKey: "LikedNFTs")
         }
     }
