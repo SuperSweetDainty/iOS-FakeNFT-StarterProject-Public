@@ -28,11 +28,14 @@ final class CatalogCollectionViewPresenter: CatalogCollectionViewPresenterProtoc
     // MARK: - Private Properties
     private var collectionDetails: CatalogCollectionNft
     private var nftCollectionCell: [NftCellModel] = []
+    private let networkService: NetworkServiceProtocol
+    private var isLoading = false
     
     // MARK: -Init
-    init(collectionDetails: CatalogCollectionNft) {
+    init(collectionDetails: CatalogCollectionNft,
+         networkService: NetworkServiceProtocol = NetworkService()) {
         self.collectionDetails = collectionDetails
-        setupObservers()
+        self.networkService = networkService
     }
     
     // MARK: - Lifecycle
@@ -125,26 +128,38 @@ final class CatalogCollectionViewPresenter: CatalogCollectionViewPresenterProtoc
     }
     
     private func loadNFTs(){
+        guard !isLoading else { return }
+        isLoading = true
+        
         view?.showLoading()
         
-        // Имитация загрузки
-        DispatchQueue.main.asyncAfter(deadline: .now() + 2) { [weak self] in
+        let nftIds = collectionDetails.nftIds
+        
+        networkService.fetchNFTs(by: nftIds) { [weak self] result in
             guard let self = self else { return }
-            
-            let shouldFail = false // Для теста ошибка true
-            let isEmptyCollection = false // true - пустая коллекция
-            
-            if shouldFail {
-                self.view?.showError("Нет удалось загрузить коллекцию")
-            }  else if isEmptyCollection {
-                self.nftCollectionCell = []
-                self.view?.showEmptyState()
-            } else {
-                self.nftCollectionCell = self.createMockNftCollections()
-                self.view?.displayCollections(self.nftCollectionCell)
-            }
-            
+            self.isLoading = false
             self.view?.hideLoading()
+            
+            switch result {
+            case .success(let networkNFTs):
+                let nftCellModels = networkNFTs.map { networkNFT in
+                    NftCellModel(
+                        id: networkNFT.id,
+                        name: networkNFT.name,
+                        images: networkNFT.images.first ?? "",
+                        rating: networkNFT.rating,
+                        price: networkNFT.price,
+                        isFavorite: false,
+                        isInCart: false
+                    )
+                }
+                
+                self.nftCollectionCell = nftCellModels
+                self.view?.displayCollections(nftCellModels)
+                
+            case .failure(let error):
+                self.view?.showError("Ошибка загрузки NFT")
+            }
         }
     }
     
@@ -168,24 +183,24 @@ final class CatalogCollectionViewPresenter: CatalogCollectionViewPresenterProtoc
     private func loadCartState(nftId: String) -> Bool {
         return UserDefaults.standard.bool(forKey: "nft_cart_\(nftId)")
     }
-    
-    // MARK: - Mock
-    private func createMockNftCollections() -> [NftCellModel] {
-        let mockNFTs = [
-            NftCellModel(id: "1", name: "Archie", images: "nftCardsOne", rating: 2, price: 1, isFavorite: true, isInCart: false),
-            NftCellModel(id: "2", name: "Ruby", images: "nftCardsTwo", rating: 2, price: 2, isFavorite: true, isInCart: true),
-            NftCellModel(id: "3", name: "Nacho", images: "nftCardsThree", rating: 3, price: 1, isFavorite: false, isInCart: true),
-            NftCellModel(id: "4", name: "Biscuit", images: "nftCardsOne", rating: 2, price: 1, isFavorite: false, isInCart: true),
-            NftCellModel(id: "5", name: "Daisy", images: "nftCardsThree", rating: 1, price: 1, isFavorite: false, isInCart: true),
-            NftCellModel(id: "6", name: "Susan", images: "nftCardsTwo", rating: 2, price: 1, isFavorite: false, isInCart: true),
-            NftCellModel(id: "7", name: "Biscuit", images: "nftCardsOne", rating: 2, price: 1, isFavorite: false, isInCart: true),
-        ]
-        
-        return mockNFTs.map { nft in
-            var updatedNft = nft
-            updatedNft.isFavorite = self.loadLikeState(nftId: nft.id)
-            updatedNft.isInCart = self.loadCartState(nftId: nft.id)
-            return updatedNft
-        }
-    }
 }
+
+//    // MARK: - Mock
+//    private func createMockNftCollections() -> [NftCellModel] {
+//        let mockNFTs = [
+//            NftCellModel(id: "1", name: "Archie", images: "nftCardsOne", rating: 2, price: 1, isFavorite: true, isInCart: false),
+//            NftCellModel(id: "2", name: "Ruby", images: "nftCardsTwo", rating: 2, price: 2, isFavorite: true, isInCart: true),
+//            NftCellModel(id: "3", name: "Nacho", images: "nftCardsThree", rating: 3, price: 1, isFavorite: false, isInCart: true),
+//            NftCellModel(id: "4", name: "Biscuit", images: "nftCardsOne", rating: 2, price: 1, isFavorite: false, isInCart: true),
+//            NftCellModel(id: "5", name: "Daisy", images: "nftCardsThree", rating: 1, price: 1, isFavorite: false, isInCart: true),
+//            NftCellModel(id: "6", name: "Susan", images: "nftCardsTwo", rating: 2, price: 1, isFavorite: false, isInCart: true),
+//            NftCellModel(id: "7", name: "Biscuit", images: "nftCardsOne", rating: 2, price: 1, isFavorite: false, isInCart: true),
+//        ]
+//
+//        return mockNFTs.map { nft in
+//            var updatedNft = nft
+//            updatedNft.isFavorite = self.loadLikeState(nftId: nft.id)
+//            updatedNft.isInCart = self.loadCartState(nftId: nft.id)
+//            return updatedNft
+//        }
+//    }

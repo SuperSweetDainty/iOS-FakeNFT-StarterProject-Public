@@ -65,6 +65,11 @@ final class WebViewViewController: UIViewController & WebViewViewControllerProto
         presenter?.viewDidLoad()
     }
     
+    // MARK: - IB Actions
+    @objc private func backButtonTapped() {
+        navigationController?.popViewController(animated: true)
+    }
+    
     // MARK: - Public Methods
     func load(request: URLRequest) {
         webView.load(request)
@@ -140,7 +145,6 @@ final class WebViewViewController: UIViewController & WebViewViewControllerProto
         }
     }
     
-    
     private func configureBackButton() {
         navigationItem.hidesBackButton = true
         let backButton = UIButton(type: .system)
@@ -152,9 +156,5 @@ final class WebViewViewController: UIViewController & WebViewViewControllerProto
         let backBarButtonItem = UIBarButtonItem(customView: backButton)
         backBarButtonItem.width = 24
         navigationItem.leftBarButtonItem = backBarButtonItem
-    }
-    
-    @objc private func backButtonTapped() {
-        navigationController?.popViewController(animated: true)
     }
 }

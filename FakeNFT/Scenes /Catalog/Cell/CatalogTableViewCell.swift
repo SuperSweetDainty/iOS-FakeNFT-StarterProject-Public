@@ -6,6 +6,7 @@
 //
 
 import UIKit
+import Kingfisher
 
 class CatalogTableViewCell: UITableViewCell {
     
@@ -15,7 +16,8 @@ class CatalogTableViewCell: UITableViewCell {
     // MARK: - UI Elements
     private lazy var catalogImageView: UIImageView = {
         let image = UIImageView()
-        image.contentMode = .top
+        //image.contentMode = .top
+        image.contentMode = .scaleAspectFill
         image.clipsToBounds = true
         image.layer.cornerRadius = 12
         image.backgroundColor = .gray
@@ -57,6 +59,7 @@ class CatalogTableViewCell: UITableViewCell {
     //MARK: - Overrides Methods
     override func prepareForReuse() {
         super.prepareForReuse()
+        catalogImageView.kf.cancelDownloadTask()
         catalogImageView.image = nil
         nameLabel.text = nil
         nftCountLabel.text = nil
@@ -64,13 +67,14 @@ class CatalogTableViewCell: UITableViewCell {
     
     // MARK: - Public Methods
     func configure(with collection: CatalogCollectionNft) {
-        nameLabel.text = collection.name
+        let capitalizedDescription = collection.name.prefix(1).uppercased() + collection.name.dropFirst()
+        nameLabel.text = capitalizedDescription
         nftCountLabel.text = "(\(collection.nftCount))"
         
-        if let imageURL = collection.imageURL {
-            catalogImageView.image = UIImage(named: imageURL)
+        if let imageURLString = collection.imageURL,
+           let url = URL(string: imageURLString) {
+            catalogImageView.kf.setImage(with: url)
         } else {
-            // Заглушка по умолчанию
             catalogImageView.image = UIImage(systemName: "photo.on.rectangle")?
                 .withTintColor(.systemGray3, renderingMode: .alwaysOriginal)
         }

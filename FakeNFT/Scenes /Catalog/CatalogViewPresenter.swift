@@ -27,6 +27,12 @@ final class CatalogViewPresenter: CatalogViewPresenterProtocol {
     //MARK: - Private Properties
     private var collectionsNft: [CatalogCollectionNft] = []
     private var currentSortOption: SortOption = .byName
+    private var isLoading = false
+    private var networkService: NetworkServiceProtocol
+    
+    init(networkService: NetworkServiceProtocol = NetworkService()) {
+        self.networkService = networkService
+    }
     
     // MARK: - Lifecycle
     func viewDidLoad() {
@@ -51,27 +57,64 @@ final class CatalogViewPresenter: CatalogViewPresenterProtocol {
     
     //MARK: - Private Methods
     private func loadCollections() {
+        guard !isLoading else { return }
+        isLoading = true
+        
         view?.showLoading()
-        // Имитация загрузки
-        DispatchQueue.main.asyncAfter(deadline: .now() + 2) {
+        
+        networkService.fetchCollections { [weak self] result in
+            guard let self = self else { return }
+            self.isLoading = false
             
-            let shouldFail = false // Для теста ошибка true
-            
-            if shouldFail {
-                self.view?.showError("Нет подключения к интернету")
-            } else {
-                self.collectionsNft = self.createMockCollections()
+            switch result {
+            case .success(let networkCollections):
+                let collections = networkCollections.map { networkModel in
+                    CatalogCollectionNft(
+                        id: networkModel.id,
+                        name: networkModel.name,
+                        nftCount: networkModel.nfts.count,
+                        imageURL: networkModel.cover,
+                        nftIds: networkModel.nfts,
+                        description: networkModel.description,
+                        author: networkModel.author
+                    )
+                }
+                
+                self.collectionsNft = collections
                 self.applySorting()
                 self.view?.hideLoading()
-                self.view?.displayCollections(self.collectionsNft)
+                
+                if collections.isEmpty {
+                    self.view?.showEmptyState()
+                } else {
+                    self.view?.displayCollections(collections)
+                }
+                
+            case .failure(let error):
+                self.view?.hideLoading()
+                self.view?.showError("Ошибка загрузки коллекций")
+                print("Ошибка загрузки: \(error.localizedDescription)")
             }
-            
-            // TODO: TEST  Ошибка загрузки
-            //            self.collectionsNft = []
-            //            self.applySorting()
-            //            self.view?.hideLoading()
-            //            self.view?.showEmptyState()
         }
+        // Имитация загрузки
+        //        DispatchQueue.main.asyncAfter(deadline: .now() + 2) {
+        //
+        //            let shouldFail = false // Для теста ошибка true
+        //
+        //            if shouldFail {
+        //                self.view?.showError("Нет подключения к интернету")
+        //            } else {
+        //                self.collectionsNft = self.createMockCollections()
+        //                self.applySorting()
+        //                self.view?.hideLoading()
+        //                self.view?.displayCollections(self.collectionsNft)
+        //            }
+        
+        // TODO: TEST  Ошибка загрузки
+        //            self.collectionsNft = []
+        //            self.applySorting()
+        //            self.view?.hideLoading()
+        //            self.view?.showEmptyState()
     }
     
     //MARK: - Private Methods
@@ -79,15 +122,15 @@ final class CatalogViewPresenter: CatalogViewPresenterProtocol {
         collectionsNft = currentSortOption.sortCollections(collectionsNft)
         view?.displayCollections(collectionsNft)
     }
-    
-    // MARK: - Mock
-    private func createMockCollections() -> [CatalogCollectionNft] {
-        return [
-            CatalogCollectionNft(id: "1", name: "Коллекция 1", nftCount: 5, imageURL: "collectionOne"),
-            CatalogCollectionNft(id: "2", name: "Коллекция 2", nftCount: 3,  imageURL: "collectionOne"),
-            CatalogCollectionNft(id: "3", name: "Коллекция 3", nftCount: 7,  imageURL: "collectionOne"),
-            CatalogCollectionNft(id: "4", name: "Коллекция 4", nftCount: 2,  imageURL:  "collectionOne"),
-            CatalogCollectionNft(id: "5", name: "Коллекция 5", nftCount: 8,  imageURL: "collectionOne")
-        ]
-    }
 }
+
+// MARK: - Mock
+//    private func createMockCollections() -> [CatalogCollectionNft] {
+//        return [
+//            CatalogCollectionNft(id: "1", name: "Коллекция 1", nftCount: 5, imageURL: "collectionOne"),
+//            CatalogCollectionNft(id: "2", name: "Коллекция 2", nftCount: 3,  imageURL: "collectionOne"),
+//            CatalogCollectionNft(id: "3", name: "Коллекция 3", nftCount: 7,  imageURL: "collectionOne"),
+//            CatalogCollectionNft(id: "4", name: "Коллекция 4", nftCount: 2,  imageURL:  "collectionOne"),
+//            CatalogCollectionNft(id: "5", name: "Коллекция 5", nftCount: 8,  imageURL: "collectionOne")
+//        ]
+//    }
