@@ -6,6 +6,7 @@
 //
 
 import UIKit
+import Kingfisher
 
 final class CatalogCollectionSectionHeaderView: UICollectionReusableView {
     
@@ -67,6 +68,7 @@ final class CatalogCollectionSectionHeaderView: UICollectionReusableView {
         return label
     }()
     
+    // MARK: - Init
     override init(frame: CGRect) {
         super.init(frame: frame)
         setupUI()
@@ -77,6 +79,7 @@ final class CatalogCollectionSectionHeaderView: UICollectionReusableView {
         fatalError("init(coder:) has not been implemented")
     }
     
+    //MARK: - Overrides Methods
     override func preferredLayoutAttributesFitting(_ layoutAttributes: UICollectionViewLayoutAttributes) -> UICollectionViewLayoutAttributes {
         setNeedsLayout()
         layoutIfNeeded()
@@ -88,6 +91,37 @@ final class CatalogCollectionSectionHeaderView: UICollectionReusableView {
         return layoutAttributes
     }
     
+    // MARK: - IB Actions
+    @objc private func authorLabelTapped() {
+        // Анимация для обратной связи
+        UIView.animate(withDuration: 0.1, animations: {
+            self.authorLinkLabel.alpha = 0.5
+        }) { _ in
+            UIView.animate(withDuration: 0.1) {
+                self.authorLinkLabel.alpha = 1.0
+            }
+        }
+        
+        onAuthorTap?()
+    }
+    
+    // MARK: - Public Methods
+    func configure(with collection: CatalogCollectionNft) {
+        nameLabel.text = collection.name
+        
+        if let imageURLString = collection.imageURL,
+           let url = URL(string: imageURLString) {
+            catalogImageView.kf.setImage(with: url)
+        } else {
+            catalogImageView.image = UIImage(systemName: "photo.on.rectangle")?
+                .withTintColor(.systemGray3, renderingMode: .alwaysOriginal)
+        }
+        let capitalizedDescription = collection.description.prefix(1).uppercased() + collection.description.dropFirst()
+        descriptionLabel.text = capitalizedDescription
+        authorLinkLabel.text = collection.author
+    }
+    
+    //MARK: - Private Methods
     private func setupUI(){
         addSubviews()
         setupConstraints()
@@ -130,35 +164,5 @@ final class CatalogCollectionSectionHeaderView: UICollectionReusableView {
     private func setupAuthorInteraction() {
         let authorTap = UITapGestureRecognizer(target: self, action: #selector(authorLabelTapped))
         authorLinkLabel.addGestureRecognizer(authorTap)
-    }
-    
-    @objc private func authorLabelTapped() {
-        // Анимация для обратной связи
-        UIView.animate(withDuration: 0.1, animations: {
-            self.authorLinkLabel.alpha = 0.5
-        }) { _ in
-            UIView.animate(withDuration: 0.1) {
-                self.authorLinkLabel.alpha = 1.0
-            }
-        }
-        
-        onAuthorTap?()
-    }
-    
-    
-    func configure(with collection: CatalogCollectionNft) {
-        nameLabel.text = collection.name
-        if let imageURL = collection.imageURL,
-           let image = UIImage(named: imageURL) {
-            catalogImageView.image = image
-        } else {
-            catalogImageView.image = UIImage(systemName: "photo.on.rectangle")?
-                .withTintColor(.systemGray3, renderingMode: .alwaysOriginal)
-        }
-        
-        // TODO: Добавить остальные данные, когда будут в модели
-        descriptionLabel.text = "Описание будет позже. Персиковый — как облака над закатным солнцем в океане. В этой коллекции совмещены трогательная нежность и живая игривость сказочных зефирных зверей."
-        authorLinkLabel.text = "John Doe"
-        
     }
 }

@@ -28,10 +28,14 @@ final class CatalogCollectionViewPresenter: CatalogCollectionViewPresenterProtoc
     // MARK: - Private Properties
     private var collectionDetails: CatalogCollectionNft
     private var nftCollectionCell: [NftCellModel] = []
+    private let networkService: NetworkServiceProtocol
+    private var isLoading = false
     
     // MARK: -Init
-    init(collectionDetails: CatalogCollectionNft) {
+    init(collectionDetails: CatalogCollectionNft,
+         networkService: NetworkServiceProtocol = NetworkService()) {
         self.collectionDetails = collectionDetails
+        self.networkService = networkService
         setupObservers()
     }
     
@@ -77,23 +81,50 @@ final class CatalogCollectionViewPresenter: CatalogCollectionViewPresenterProtoc
     
     func didTapLike(for nftId: String) {
         guard let index = nftCollectionCell.firstIndex(where: { $0.id == nftId }) else { return }
+        let newLikeState = !nftCollectionCell[index].isFavorite
         
-        nftCollectionCell[index].isFavorite.toggle()
-        saveLikeState(nftId: nftId, isLiked: nftCollectionCell[index].isFavorite)
+        // TODO: заменить на вызов сервиса избранного
+        if newLikeState {
+            // Добавить в избранное
+            // favoriteService.addToFavorites(nftId: nftId)
+        } else {
+            // Удалить из избранного
+            // favoriteService.removeFromFavorites(nftId: nftId)
+        }
         
+        nftCollectionCell[index].isFavorite = newLikeState
+        
+        saveLikeState(nftId: nftId, isLiked: newLikeState)
+        view?.updateNFTLikeState(at: index, isLiked: newLikeState)
+        
+        print("Like tapped for NFT: \(nftId), new state: \(newLikeState ? "liked" : "unliked")")
         // Отправляем уведомление
         NotificationCenter.default.post(
             name: .nftLikeStateChanged,
             object: nil,
-            userInfo: ["nftId": nftId, "isLiked": nftCollectionCell[index].isFavorite]
+            userInfo: ["nftId": nftId, "isLiked": newLikeState]
         )
     }
     
     func didTapCart(for nftId: String) {
         guard let index = nftCollectionCell.firstIndex(where: { $0.id == nftId }) else { return }
+        let newCartState = !nftCollectionCell[index].isInCart
         
-        nftCollectionCell[index].isInCart.toggle()
-        saveCartState(nftId: nftId, isInCart: nftCollectionCell[index].isInCart)
+        // TODO: заменить на вызов сервиса из корзины
+        if newCartState {
+            // Добавить в корзину
+            // cartService.addToCart(nftId: nftId)
+        } else {
+            // Удалить из корзины
+            // cartService.removeFromCart(nftId: nftId)
+        }
+        
+        nftCollectionCell[index].isInCart = newCartState
+        
+        saveCartState(nftId: nftId, isInCart: newCartState)
+        view?.updateNFTCartState(at: index, isInCart: newCartState)
+        
+        print("Cart tapped for NFT: \(nftId), new state: \(newCartState ? "in cart" : "not in cart")")
         
         // Отправляем уведомление
         NotificationCenter.default.post(
@@ -101,6 +132,7 @@ final class CatalogCollectionViewPresenter: CatalogCollectionViewPresenterProtoc
             object: nil,
             userInfo: ["nftId": nftId, "isInCart": nftCollectionCell[index].isInCart]
         )
+        print("Cart tapped for NFT: \(nftId)")
     }
     
     func didTapRetry() {
@@ -125,67 +157,88 @@ final class CatalogCollectionViewPresenter: CatalogCollectionViewPresenterProtoc
     }
     
     private func loadNFTs(){
+        guard !isLoading else { return }
+        isLoading = true
+        
         view?.showLoading()
         
-        // Имитация загрузки
-        DispatchQueue.main.asyncAfter(deadline: .now() + 2) { [weak self] in
-            guard let self = self else { return }
-            
-            let shouldFail = false // Для теста ошибка true
-            let isEmptyCollection = false // true - пустая коллекция
-            
-            if shouldFail {
-                self.view?.showError("Нет удалось загрузить коллекцию")
-            }  else if isEmptyCollection {
-                self.nftCollectionCell = []
-                self.view?.showEmptyState()
-            } else {
-                self.nftCollectionCell = self.createMockNftCollections()
-                self.view?.displayCollections(self.nftCollectionCell)
-            }
-            
+        let nftIds = collectionDetails.nftIds
+        
+        networkService.fetchNFTs(by: nftIds) { [weak self] result in
+            guard let self else { return }
+            self.isLoading = false
             self.view?.hideLoading()
+            
+            switch result {
+            case .success(let networkNFTs):
+                let nftCellModels = networkNFTs.map { networkNFT in
+                    NftCellModel(
+                        id: networkNFT.id,
+                        name: networkNFT.name,
+                        images: networkNFT.images.first ?? "",
+                        rating: networkNFT.rating,
+                        price: networkNFT.price,
+                        isFavorite: self.loadLikeState(nftId: networkNFT.id), // TODO: заменить на реальные сервисы
+                        isInCart: self.loadCartState(nftId: networkNFT.id) // TODO: заменить на реальные сервисы
+                    )
+                }
+                
+                self.nftCollectionCell = nftCellModels
+                
+                if nftCellModels.isEmpty {
+                    self.view?.showEmptyState()
+                } else {
+                    self.view?.displayCollections(nftCellModels)
+                }
+                
+            case .failure(let error):
+                self.view?.showError("Ошибка загрузки NFT: \(error.localizedDescription)")
+            }
         }
     }
     
     private func saveLikeState(nftId: String, isLiked: Bool) {
         // Мок-сохранение в UserDefaults
+        // TODO: заменить UserDefaults на реальные сервисы
         UserDefaults.standard.set(isLiked, forKey: "nft_like_\(nftId)")
         print("NFT \(nftId) like state: \(isLiked ? "liked" : "unliked")")
         
     }
     
     private func loadLikeState(nftId: String) -> Bool {
+        // TODO: заменить UserDefaults на реальные сервисы
         UserDefaults.standard.bool(forKey: "nft_like_\(nftId)")
     }
     
     private func saveCartState(nftId: String, isInCart: Bool) {
         // Мок-сохранение в UserDefaults
+        // TODO: заменить UserDefaults на реальные сервисы
         UserDefaults.standard.set(isInCart, forKey: "nft_cart_\(nftId)")
         print("NFT \(nftId) like state: \(isInCart ? "cart" : "noCart")")
     }
     
     private func loadCartState(nftId: String) -> Bool {
+        // TODO: заменить UserDefaults на реальные сервисы
         return UserDefaults.standard.bool(forKey: "nft_cart_\(nftId)")
     }
-    
-    // MARK: - Mock
-    private func createMockNftCollections() -> [NftCellModel] {
-        let mockNFTs = [
-            NftCellModel(id: "1", name: "Archie", images: "nftCardsOne", rating: 2, price: 1, isFavorite: true, isInCart: false),
-            NftCellModel(id: "2", name: "Ruby", images: "nftCardsTwo", rating: 2, price: 2, isFavorite: true, isInCart: true),
-            NftCellModel(id: "3", name: "Nacho", images: "nftCardsThree", rating: 3, price: 1, isFavorite: false, isInCart: true),
-            NftCellModel(id: "4", name: "Biscuit", images: "nftCardsOne", rating: 2, price: 1, isFavorite: false, isInCart: true),
-            NftCellModel(id: "5", name: "Daisy", images: "nftCardsThree", rating: 1, price: 1, isFavorite: false, isInCart: true),
-            NftCellModel(id: "6", name: "Susan", images: "nftCardsTwo", rating: 2, price: 1, isFavorite: false, isInCart: true),
-            NftCellModel(id: "7", name: "Biscuit", images: "nftCardsOne", rating: 2, price: 1, isFavorite: false, isInCart: true),
-        ]
-        
-        return mockNFTs.map { nft in
-            var updatedNft = nft
-            updatedNft.isFavorite = self.loadLikeState(nftId: nft.id)
-            updatedNft.isInCart = self.loadCartState(nftId: nft.id)
-            return updatedNft
-        }
-    }
 }
+
+//    // MARK: - Mock
+//    private func createMockNftCollections() -> [NftCellModel] {
+//        let mockNFTs = [
+//            NftCellModel(id: "1", name: "Archie", images: "nftCardsOne", rating: 2, price: 1, isFavorite: true, isInCart: false),
+//            NftCellModel(id: "2", name: "Ruby", images: "nftCardsTwo", rating: 2, price: 2, isFavorite: true, isInCart: true),
+//            NftCellModel(id: "3", name: "Nacho", images: "nftCardsThree", rating: 3, price: 1, isFavorite: false, isInCart: true),
+//            NftCellModel(id: "4", name: "Biscuit", images: "nftCardsOne", rating: 2, price: 1, isFavorite: false, isInCart: true),
+//            NftCellModel(id: "5", name: "Daisy", images: "nftCardsThree", rating: 1, price: 1, isFavorite: false, isInCart: true),
+//            NftCellModel(id: "6", name: "Susan", images: "nftCardsTwo", rating: 2, price: 1, isFavorite: false, isInCart: true),
+//            NftCellModel(id: "7", name: "Biscuit", images: "nftCardsOne", rating: 2, price: 1, isFavorite: false, isInCart: true),
+//        ]
+//
+//        return mockNFTs.map { nft in
+//            var updatedNft = nft
+//            updatedNft.isFavorite = self.loadLikeState(nftId: nft.id)
+//            updatedNft.isInCart = self.loadCartState(nftId: nft.id)
+//            return updatedNft
+//        }
+//    }

@@ -8,9 +8,6 @@
 import UIKit
 import ProgressHUD
 
-import UIKit
-import ProgressHUD
-
 protocol CatalogViewControllerProtocol: AnyObject {
     func displayCollections(_ collections: [CatalogCollectionNft])
     func showLoading()
@@ -90,7 +87,7 @@ final class CatalogViewController: UIViewController, CatalogViewControllerProtoc
     // MARK: - Lifecycle
     override func viewDidLoad() {
         super.viewDidLoad()
-        presenter = CatalogViewPresenter()
+        presenter = CatalogViewPresenter(networkService: NetworkService())
         presenter?.view = self
         setupUI()
         presenter?.viewDidLoad()
@@ -205,7 +202,7 @@ final class CatalogViewController: UIViewController, CatalogViewControllerProtoc
 // MARK: - UITableViewDataSource
 extension CatalogViewController: UITableViewDataSource {
     func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
-         presenter?.collectionsCount ?? 0
+        presenter?.collectionsCount ?? 0
     }
     
     func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
@@ -216,7 +213,6 @@ extension CatalogViewController: UITableViewDataSource {
             return UITableViewCell()
         }
         
-        // TODO: - Заглушка данных
         guard let presenter = presenter,
               indexPath.row < presenter.collectionsCount else {
             return cell

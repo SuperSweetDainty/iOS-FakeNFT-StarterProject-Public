@@ -9,9 +9,9 @@ import Foundation
 struct NftCellModel {
     let id: String
     let name: String
-    let images: [String]
+    let images: String
     let rating: Int
-    let price: Int
+    let price: Double
     var isFavorite: Bool
     var isInCart: Bool
     
@@ -19,12 +19,12 @@ struct NftCellModel {
          name: String,
          images: String,
          rating: Int,
-         price: Int,
+         price: Double,
          isFavorite: Bool,
          isInCart: Bool) {
         self.id = id
         self.name = name
-        self.images = [images]
+        self.images = images
         self.rating = rating
         self.price = price
         self.isFavorite = isFavorite

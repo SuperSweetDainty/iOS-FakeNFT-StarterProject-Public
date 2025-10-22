@@ -140,7 +140,6 @@ final class CatalogCollectionViewController: UIViewController, CatalogCollection
     }
     
     //MARK: - Public Methods
-    
     func displayCollections(_ collections: [NftCellModel]) {
         collectionView.reloadData()
         showContentState()
@@ -248,7 +247,6 @@ extension CatalogCollectionViewController: UICollectionViewDataSource {
     }
     
     func collectionView(_ collectionView: UICollectionView, cellForItemAt indexPath: IndexPath) -> UICollectionViewCell {
-        //TODO: -Заглушка данных
         guard let cell = collectionView.dequeueReusableCell(
             withReuseIdentifier: CatalogNftCollectionViewCell.identifier,
             for: indexPath) as? CatalogNftCollectionViewCell else {
@@ -274,8 +272,7 @@ extension CatalogCollectionViewController: UICollectionViewDataSource {
 extension CatalogCollectionViewController: UICollectionViewDelegateFlowLayout {
     
     func collectionView(_ collectionView: UICollectionView, layout collectionViewLayout: UICollectionViewLayout, referenceSizeForHeaderInSection section: Int) -> CGSize {
-        // Временная фиксированная высота, можно сделать динамической позже
-        return CGSize(width: collectionView.frame.width, height: 450)
+        CGSize(width: collectionView.frame.width, height: 450)
     }
     
     func collectionView(_ collectionView: UICollectionView,
