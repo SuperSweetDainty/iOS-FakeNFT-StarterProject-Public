@@ -16,7 +16,6 @@ class CatalogTableViewCell: UITableViewCell {
     // MARK: - UI Elements
     private lazy var catalogImageView: UIImageView = {
         let image = UIImageView()
-        //image.contentMode = .top
         image.contentMode = .scaleAspectFill
         image.clipsToBounds = true
         image.layer.cornerRadius = 12

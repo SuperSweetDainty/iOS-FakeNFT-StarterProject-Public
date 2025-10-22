@@ -17,7 +17,13 @@ struct CatalogCollectionNft {
     let author: String
     
     //TODO: - Для моков
-    init(id: String, name: String, nftCount: Int, imageURL: String? = nil, nftIds: [String], description: String = "", author: String = "") {
+    init(id: String,
+         name: String,
+         nftCount: Int,
+         imageURL: String?,
+         nftIds: [String],
+         description: String,
+         author: String) {
         self.id = id
         self.name = name
         self.nftCount = nftCount

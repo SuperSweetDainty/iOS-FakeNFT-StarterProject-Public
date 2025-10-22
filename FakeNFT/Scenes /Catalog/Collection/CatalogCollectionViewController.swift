@@ -247,7 +247,6 @@ extension CatalogCollectionViewController: UICollectionViewDataSource {
     }
     
     func collectionView(_ collectionView: UICollectionView, cellForItemAt indexPath: IndexPath) -> UICollectionViewCell {
-        //TODO: -Заглушка данных
         guard let cell = collectionView.dequeueReusableCell(
             withReuseIdentifier: CatalogNftCollectionViewCell.identifier,
             for: indexPath) as? CatalogNftCollectionViewCell else {

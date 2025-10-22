@@ -63,7 +63,7 @@ final class CatalogViewPresenter: CatalogViewPresenterProtocol {
         view?.showLoading()
         
         networkService.fetchCollections { [weak self] result in
-            guard let self = self else { return }
+            guard let self else { return }
             self.isLoading = false
             
             switch result {
@@ -96,19 +96,7 @@ final class CatalogViewPresenter: CatalogViewPresenterProtocol {
                 print("Ошибка загрузки: \(error.localizedDescription)")
             }
         }
-        // Имитация загрузки
-        //        DispatchQueue.main.asyncAfter(deadline: .now() + 2) {
-        //
-        //            let shouldFail = false // Для теста ошибка true
-        //
-        //            if shouldFail {
-        //                self.view?.showError("Нет подключения к интернету")
-        //            } else {
-        //                self.collectionsNft = self.createMockCollections()
-        //                self.applySorting()
-        //                self.view?.hideLoading()
-        //                self.view?.displayCollections(self.collectionsNft)
-        //            }
+        //loadCollectionSimulation()
         
         // TODO: TEST  Ошибка загрузки
         //            self.collectionsNft = []
@@ -116,6 +104,22 @@ final class CatalogViewPresenter: CatalogViewPresenterProtocol {
         //            self.view?.hideLoading()
         //            self.view?.showEmptyState()
     }
+    
+    // Имитация загрузки
+    //private func loadCollectionSimulation() {
+    //        DispatchQueue.main.asyncAfter(deadline: .now() + 2) {
+    //
+    //            let shouldFail = false // Для теста ошибка true
+    //
+    //            if shouldFail {
+    //                self.view?.showError("Нет подключения к интернету")
+    //            } else {
+    //                self.collectionsNft = self.createMockCollections()
+    //                self.applySorting()
+    //                self.view?.hideLoading()
+    //                self.view?.displayCollections(self.collectionsNft)
+    //            }
+    //}
     
     //MARK: - Private Methods
     private func applySorting() {
