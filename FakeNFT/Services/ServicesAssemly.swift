@@ -2,6 +2,7 @@ final class ServicesAssembly {
 
     private let networkClient: NetworkClient
     private let nftStorage: NftStorage
+    private let imageCacheServiceInstance: ImageCacheService
 
     init(
         networkClient: NetworkClient,
@@ -9,6 +10,7 @@ final class ServicesAssembly {
     ) {
         self.networkClient = networkClient
         self.nftStorage = nftStorage
+        self.imageCacheServiceInstance = ImageCacheServiceImpl()
     }
 
     var nftService: NftService {
@@ -23,5 +25,9 @@ final class ServicesAssembly {
             networkClient: networkClient,
             storage: nftStorage
         )
+    }
+    
+    var imageCacheService: ImageCacheService {
+        imageCacheServiceInstance
     }
 }

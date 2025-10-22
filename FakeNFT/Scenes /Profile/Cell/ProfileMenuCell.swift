@@ -2,8 +2,6 @@ import UIKit
 
 final class ProfileMenuCell: UITableViewCell {
     
-    // MARK: - UI Elements
-    
     private lazy var titleLabel: UILabel = {
         let label = UILabel()
         label.font = .bodyBold
@@ -20,8 +18,6 @@ final class ProfileMenuCell: UITableViewCell {
         return imageView
     }()
     
-    // MARK: - Init
-    
     override init(style: UITableViewCell.CellStyle, reuseIdentifier: String?) {
         super.init(style: style, reuseIdentifier: reuseIdentifier)
         setupUI()
@@ -30,8 +26,6 @@ final class ProfileMenuCell: UITableViewCell {
     required init?(coder: NSCoder) {
         fatalError("init(coder:) has not been implemented")
     }
-    
-    // MARK: - Setup
     
     private func setupUI() {
         backgroundColor = .background
@@ -58,13 +52,9 @@ final class ProfileMenuCell: UITableViewCell {
         ])
     }
     
-    // MARK: - Configuration
-    
     func configure(with title: String) {
         titleLabel.text = title
     }
 }
-
-// MARK: - ReuseIdentifying
 
 extension ProfileMenuCell: ReuseIdentifying {}

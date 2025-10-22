@@ -2,14 +2,10 @@ import UIKit
 
 final class FavoritesNFTViewController: UIViewController {
     
-    // MARK: - Properties
-    
     private let presenter: FavoritesNFTPresenter
     private let servicesAssembly: ServicesAssembly
     private var favoriteNFTs: [Nft] = []
     private var likedNFTs: Set<String> = []
-    
-    // MARK: - UI Elements
     
     private lazy var collectionView: UICollectionView = {
         let layout = UICollectionViewFlowLayout()
@@ -21,6 +17,7 @@ final class FavoritesNFTViewController: UIViewController {
         let collectionView = UICollectionView(frame: .zero, collectionViewLayout: layout)
         collectionView.delegate = self
         collectionView.dataSource = self
+        collectionView.prefetchDataSource = self
         collectionView.backgroundColor = .background
         collectionView.showsVerticalScrollIndicator = false
         collectionView.register(FavoritesNFTCollectionViewCell.self)
@@ -46,8 +43,6 @@ final class FavoritesNFTViewController: UIViewController {
         return indicator
     }()
     
-    // MARK: - Init
-    
     init(servicesAssembly: ServicesAssembly, presenter: FavoritesNFTPresenter) {
         self.servicesAssembly = servicesAssembly
         self.presenter = presenter
@@ -57,8 +52,6 @@ final class FavoritesNFTViewController: UIViewController {
     required init?(coder: NSCoder) {
         fatalError("init(coder:) has not been implemented")
     }
-    
-    // MARK: - Lifecycle
     
     override func viewDidLoad() {
         super.viewDidLoad()
@@ -72,8 +65,6 @@ final class FavoritesNFTViewController: UIViewController {
     deinit {
         NotificationCenter.default.removeObserver(self)
     }
-    
-    // MARK: - Setup
     
     private func setupUI() {
         view.backgroundColor = .background
@@ -125,8 +116,6 @@ final class FavoritesNFTViewController: UIViewController {
         )
     }
     
-    // MARK: - Actions
-    
     @objc private func backButtonTapped() {
         navigationController?.popViewController(animated: true)
     }
@@ -135,8 +124,6 @@ final class FavoritesNFTViewController: UIViewController {
         collectionView.reloadData()
     }
 }
-
-// MARK: - FavoritesNFTView
 
 extension FavoritesNFTViewController: FavoritesNFTView {
     
@@ -189,8 +176,6 @@ extension FavoritesNFTViewController: FavoritesNFTView {
     }
 }
 
-// MARK: - UICollectionViewDataSource
-
 extension FavoritesNFTViewController: UICollectionViewDataSource {
     
     func collectionView(_ collectionView: UICollectionView, numberOfItemsInSection section: Int) -> Int {
@@ -202,15 +187,17 @@ extension FavoritesNFTViewController: UICollectionViewDataSource {
         let nft = favoriteNFTs[indexPath.item]
         let isLiked = likedNFTs.contains(nft.id)
         
-        cell.configure(with: nft, isLiked: isLiked) { [weak self] (isLiked: Bool) in
+        cell.configure(
+            with: nft,
+            isLiked: isLiked,
+            imageCacheService: servicesAssembly.imageCacheService
+        ) { [weak self] (isLiked: Bool) in
             self?.presenter.didToggleLike(for: nft.id, isLiked: isLiked)
         }
         
         return cell
     }
 }
-
-// MARK: - UICollectionViewDelegateFlowLayout
 
 extension FavoritesNFTViewController: UICollectionViewDelegateFlowLayout {
     
@@ -230,7 +217,17 @@ extension FavoritesNFTViewController: UICollectionViewDelegateFlowLayout {
     }
 }
 
-// MARK: - Notification Names
+extension FavoritesNFTViewController: UICollectionViewDataSourcePrefetching {
+    
+    func collectionView(_ collectionView: UICollectionView, prefetchItemsAt indexPaths: [IndexPath]) {
+        let imageURLs = indexPaths.compactMap { indexPath -> URL? in
+            guard indexPath.item < favoriteNFTs.count else { return nil }
+            return favoriteNFTs[indexPath.item].images.first
+        }
+        
+        servicesAssembly.imageCacheService.prefetchImages(urls: imageURLs)
+    }
+}
 
 extension Notification.Name {
     static let likedNFTsDidChange = Notification.Name("likedNFTsDidChange")

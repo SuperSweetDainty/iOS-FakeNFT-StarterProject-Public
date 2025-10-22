@@ -2,14 +2,10 @@ import UIKit
 
 final class ProfileViewController: UIViewController {
     
-    // MARK: - Properties
-    
     private let presenter: ProfilePresenter
     private let servicesAssembly: ServicesAssembly
     private var user: User?
     var currentAvatarImage: UIImage?
-    
-    // MARK: - UI Elements
     
     private lazy var tableView: UITableView = {
         let tableView = UITableView(frame: .zero, style: .grouped)
@@ -18,8 +14,6 @@ final class ProfileViewController: UIViewController {
         tableView.backgroundColor = .background
         tableView.separatorStyle = .none
         tableView.showsVerticalScrollIndicator = false
-        
-        // Register cells
         tableView.register(ProfileHeaderCell.self)
         tableView.register(ProfileMenuCell.self)
         
@@ -32,8 +26,6 @@ final class ProfileViewController: UIViewController {
         return indicator
     }()
     
-    // MARK: - Init
-    
     init(presenter: ProfilePresenter, servicesAssembly: ServicesAssembly) {
         self.presenter = presenter
         self.servicesAssembly = servicesAssembly
@@ -43,8 +35,6 @@ final class ProfileViewController: UIViewController {
     required init?(coder: NSCoder) {
         fatalError("init(coder:) has not been implemented")
     }
-    
-    // MARK: - Lifecycle
     
     override func viewDidLoad() {
         super.viewDidLoad()
@@ -66,8 +56,6 @@ final class ProfileViewController: UIViewController {
     deinit {
         NotificationCenter.default.removeObserver(self)
     }
-    
-    // MARK: - Setup
     
     private func setupUI() {
         view.backgroundColor = .background
@@ -126,8 +114,6 @@ final class ProfileViewController: UIViewController {
     }
 }
 
-// MARK: - ProfileView
-
 extension ProfileViewController: ProfileView {
     
     func displayProfile(_ user: User) {
@@ -180,7 +166,6 @@ extension ProfileViewController: ProfileView {
     }
     
     func updateAvatar(_ image: UIImage?) {
-        // Update the avatar in ProfileHeaderCell
         DispatchQueue.main.async { [weak self] in
             self?.currentAvatarImage = image
             self?.updateAvatarInHeaderCell(image)
@@ -192,8 +177,6 @@ extension ProfileViewController: ProfileView {
             headerCell.updateAvatar(image)
         }
     }
-    
-    // MARK: - Notification Handlers
     
     @objc private func profileDidUpdate(_ notification: Notification) {
         guard let userDict = notification.object as? [String: User],
@@ -224,8 +207,6 @@ extension ProfileViewController: ProfileView {
     }
 }
 
-// MARK: - UITableViewDataSource
-
 extension ProfileViewController: UITableViewDataSource {
     
     func numberOfSections(in tableView: UITableView) -> Int {
@@ -247,6 +228,7 @@ extension ProfileViewController: UITableViewDataSource {
             if let user = user {
                 cell.configure(
                     with: user,
+                    imageCacheService: servicesAssembly.imageCacheService,
                     onWebsiteTap: { [weak self] in
                         self?.presenter.didTapWebsite()
                     }
@@ -271,8 +253,6 @@ extension ProfileViewController: UITableViewDataSource {
         }
     }
 }
-
-// MARK: - UITableViewDelegate
 
 extension ProfileViewController: UITableViewDelegate {
     
@@ -313,8 +293,6 @@ extension ProfileViewController: UITableViewDelegate {
         }
     }
 }
-
-// MARK: - ProfileView Extension
 
 extension ProfileViewController {
     

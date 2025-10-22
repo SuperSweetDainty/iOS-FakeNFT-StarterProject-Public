@@ -1,8 +1,6 @@
 import Foundation
 import UIKit
 
-// MARK: - Protocol
-
 protocol ProfilePresenter {
     func viewDidLoad()
     func didTapEditProfile()
@@ -11,13 +9,9 @@ protocol ProfilePresenter {
     func didTapWebsite()
 }
 
-// MARK: - State
-
 enum ProfileState {
     case initial, loading, failed(Error), data(User)
 }
-
-// MARK: - View Protocol
 
 protocol ProfileView: AnyObject, ErrorView, LoadingView {
     func displayProfile(_ user: User)
@@ -30,11 +24,7 @@ protocol ProfileView: AnyObject, ErrorView, LoadingView {
     func navigateToFavoriteNFTs()
 }
 
-// MARK: - Presenter Implementation
-
 final class ProfilePresenterImpl: ProfilePresenter {
-    
-    // MARK: - Properties
     
     weak var view: ProfileView?
     private let input: ProfileInput
@@ -45,14 +35,10 @@ final class ProfilePresenterImpl: ProfilePresenter {
         }
     }
     
-    // MARK: - Init
-    
     init(input: ProfileInput, service: ProfileService) {
         self.input = input
         self.service = service
     }
-    
-    // MARK: - Functions
     
     func viewDidLoad() {
         state = .loading
@@ -89,8 +75,6 @@ final class ProfilePresenterImpl: ProfilePresenter {
         view?.showWebView(with: website)
     }
     
-    // MARK: - Private Functions
-    
     private func stateDidChanged() {
         switch state {
         case .initial:
@@ -120,7 +104,11 @@ final class ProfilePresenterImpl: ProfilePresenter {
     }
     
     private func updateProfile(_ user: User) {
-        service.updateProfile(user) { [weak self] result in
+        service.updateProfile(
+            name: user.name,
+            description: user.description,
+            website: user.website?.absoluteString
+        ) { [weak self] result in
             switch result {
             case .success(let updatedUser):
                 self?.state = .data(updatedUser)

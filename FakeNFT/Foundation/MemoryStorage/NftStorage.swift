@@ -6,8 +6,6 @@ protocol NftStorage: AnyObject {
     func saveProfile(_ user: User)
     func getProfile() -> User?
 }
-
-// Пример простого класса, который сохраняет данные из сети
 final class NftStorageImpl: NftStorage {
     private var storage: [String: Nft] = [:]
     private var profileStorage: User?
