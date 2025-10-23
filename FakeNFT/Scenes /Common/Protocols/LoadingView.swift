@@ -15,4 +15,5 @@ extension LoadingView {
     func hideLoading() {
         activityIndicator.stopAnimating()
     }
+    
 }
