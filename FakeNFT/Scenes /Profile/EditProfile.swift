@@ -1,11 +1,7 @@
 import UIKit
 import PhotosUI
 
-// MARK: - EditProfileViewController
-
 final class EditProfileViewController: UIViewController {
-    
-    // MARK: - Properties
     
     private let user: User
     private let onSave: (User) -> Void
@@ -19,8 +15,6 @@ final class EditProfileViewController: UIViewController {
             updateSaveButtonVisibility()
         }
     }
-    
-    // MARK: - UI Elements
     
     private lazy var scrollView: UIScrollView = {
         let scrollView = UIScrollView()
@@ -138,8 +132,6 @@ final class EditProfileViewController: UIViewController {
         return indicator
     }()
     
-    // MARK: - Init
-    
     init(user: User, currentAvatarImage: UIImage?, onSave: @escaping (User) -> Void, onCancel: @escaping () -> Void) {
         self.user = user
         self.editedUser = user
@@ -153,8 +145,6 @@ final class EditProfileViewController: UIViewController {
         fatalError("init(coder:) has not been implemented")
     }
     
-    // MARK: - Lifecycle
-    
     override func viewDidLoad() {
         super.viewDidLoad()
         setupUI()
@@ -167,12 +157,8 @@ final class EditProfileViewController: UIViewController {
         NotificationCenter.default.removeObserver(self)
     }
     
-    // MARK: - Setup
-    
     private func setupUI() {
         view.backgroundColor = .background
-        
-        // Navigation bar setup
         navigationItem.leftBarButtonItem = UIBarButtonItem(
             image: UIImage(systemName: "chevron.left"),
             style: .plain,
@@ -180,11 +166,7 @@ final class EditProfileViewController: UIViewController {
             action: #selector(cancelButtonTapped)
         )
         navigationItem.leftBarButtonItem?.tintColor = UIColor(hexString: "1A1B22")
-        
-        // Hide navigation bar title
         navigationItem.title = ""
-        
-        // Add all subviews
         [scrollView, activityIndicator].forEach {
             $0.translatesAutoresizingMaskIntoConstraints = false
             view.addSubview($0)
@@ -203,68 +185,45 @@ final class EditProfileViewController: UIViewController {
     
     private func setupConstraints() {
         NSLayoutConstraint.activate([
-            // ScrollView
             scrollView.topAnchor.constraint(equalTo: view.safeAreaLayoutGuide.topAnchor),
             scrollView.leadingAnchor.constraint(equalTo: view.leadingAnchor),
             scrollView.trailingAnchor.constraint(equalTo: view.trailingAnchor),
             scrollView.bottomAnchor.constraint(equalTo: view.bottomAnchor),
-            
-            // ContentView
             contentView.topAnchor.constraint(equalTo: scrollView.topAnchor),
             contentView.leadingAnchor.constraint(equalTo: scrollView.leadingAnchor),
             contentView.trailingAnchor.constraint(equalTo: scrollView.trailingAnchor),
             contentView.bottomAnchor.constraint(equalTo: scrollView.bottomAnchor),
             contentView.widthAnchor.constraint(equalTo: scrollView.widthAnchor),
-            
-            // Avatar
             avatarImageView.topAnchor.constraint(equalTo: contentView.topAnchor, constant: 1),
             avatarImageView.centerXAnchor.constraint(equalTo: contentView.centerXAnchor),
             avatarImageView.widthAnchor.constraint(equalToConstant: 70),
             avatarImageView.heightAnchor.constraint(equalToConstant: 70),
-            
-            // PhotoChanger
             photoChangerImageView.trailingAnchor.constraint(equalTo: avatarImageView.trailingAnchor, constant: 0),
             photoChangerImageView.bottomAnchor.constraint(equalTo: avatarImageView.bottomAnchor, constant: 0),
             photoChangerImageView.widthAnchor.constraint(equalToConstant: 24),
             photoChangerImageView.heightAnchor.constraint(equalToConstant: 24),
-            
-            // Name Label
             nameLabel.topAnchor.constraint(equalTo: avatarImageView.bottomAnchor, constant: 24),
             nameLabel.leadingAnchor.constraint(equalTo: contentView.leadingAnchor, constant: 16),
-            
-            // Name TextField
             nameTextField.topAnchor.constraint(equalTo: nameLabel.bottomAnchor, constant: 8),
             nameTextField.leadingAnchor.constraint(equalTo: contentView.leadingAnchor, constant: 16),
             nameTextField.trailingAnchor.constraint(equalTo: contentView.trailingAnchor, constant: -16),
             nameTextField.heightAnchor.constraint(equalToConstant: 50),
-            
-            // Description Label
             descriptionLabel.topAnchor.constraint(equalTo: nameTextField.bottomAnchor, constant: 24),
             descriptionLabel.leadingAnchor.constraint(equalTo: contentView.leadingAnchor, constant: 16),
-            
-            // Description TextView
             descriptionTextView.topAnchor.constraint(equalTo: descriptionLabel.bottomAnchor, constant: 8),
             descriptionTextView.leadingAnchor.constraint(equalTo: contentView.leadingAnchor, constant: 16),
             descriptionTextView.trailingAnchor.constraint(equalTo: contentView.trailingAnchor, constant: -16),
             descriptionTextView.heightAnchor.constraint(greaterThanOrEqualToConstant: 100),
-            
-            // Website Label
             websiteLabel.topAnchor.constraint(equalTo: descriptionTextView.bottomAnchor, constant: 24),
             websiteLabel.leadingAnchor.constraint(equalTo: contentView.leadingAnchor, constant: 16),
-            
-            // Website TextField
             websiteTextField.topAnchor.constraint(equalTo: websiteLabel.bottomAnchor, constant: 8),
             websiteTextField.leadingAnchor.constraint(equalTo: contentView.leadingAnchor, constant: 16),
             websiteTextField.trailingAnchor.constraint(equalTo: contentView.trailingAnchor, constant: -16),
             websiteTextField.heightAnchor.constraint(equalToConstant: 50),
-            
-            // Save Button
             saveButton.leadingAnchor.constraint(equalTo: view.leadingAnchor, constant: 16),
             saveButton.trailingAnchor.constraint(equalTo: view.trailingAnchor, constant: -16),
             saveButton.bottomAnchor.constraint(equalTo: view.safeAreaLayoutGuide.bottomAnchor, constant: -8),
             saveButton.heightAnchor.constraint(equalToConstant: 60),
-            
-            // Activity Indicator
             activityIndicator.centerXAnchor.constraint(equalTo: view.centerXAnchor),
             activityIndicator.centerYAnchor.constraint(equalTo: view.centerYAnchor)
         ])
@@ -276,19 +235,13 @@ final class EditProfileViewController: UIViewController {
     
     private func setupActions() {
         saveButton.addTarget(self, action: #selector(saveButtonTapped), for: .touchUpInside)
-        
-        // Add tap gestures to avatar and photo changer
         let avatarTapGesture = UITapGestureRecognizer(target: self, action: #selector(avatarTapped))
         avatarImageView.addGestureRecognizer(avatarTapGesture)
         
         let photoChangerTapGesture = UITapGestureRecognizer(target: self, action: #selector(photoChangerTapped))
         photoChangerImageView.addGestureRecognizer(photoChangerTapGesture)
-        
-        // Add text change observers
         nameTextField.addTarget(self, action: #selector(textFieldDidChange), for: .editingChanged)
         websiteTextField.addTarget(self, action: #selector(textFieldDidChange), for: .editingChanged)
-        
-        // Add tap gesture to website field
         let websiteTapGesture = UITapGestureRecognizer(target: self, action: #selector(websiteFieldTapped))
         websiteTextField.addGestureRecognizer(websiteTapGesture)
         
@@ -304,8 +257,6 @@ final class EditProfileViewController: UIViewController {
         nameTextField.text = user.name
         descriptionTextView.text = user.description
         websiteTextField.text = user.website?.absoluteString
-        
-        // Set up avatar - display current avatar if available, otherwise placeholder
         if let currentAvatarImage = currentAvatarImage {
             avatarImageView.image = currentAvatarImage
             avatarImageView.tintColor = nil
@@ -331,8 +282,6 @@ final class EditProfileViewController: UIViewController {
             object: nil
         )
     }
-    
-    // MARK: - Actions
     
     @objc private func cancelButtonTapped() {
         if hasChanges {
@@ -378,8 +327,6 @@ final class EditProfileViewController: UIViewController {
         scrollView.verticalScrollIndicatorInsets.bottom = 0
     }
     
-    // MARK: - Private Methods
-    
     private func presentImagePicker() {
         if #available(iOS 14.0, *) {
             var configuration = PHPickerConfiguration()
@@ -390,7 +337,6 @@ final class EditProfileViewController: UIViewController {
             picker.delegate = self
             present(picker, animated: true)
         } else {
-            // Fallback to UIImagePickerController for iOS 13
             let picker = UIImagePickerController()
             picker.delegate = self
             picker.sourceType = .photoLibrary
@@ -400,7 +346,6 @@ final class EditProfileViewController: UIViewController {
     }
     
     private func saveProfile() {
-        // Validate input
         guard let name = nameTextField.text, !name.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else {
             showError(ErrorModel(
                 message: "Имя не может быть пустым",
@@ -409,8 +354,6 @@ final class EditProfileViewController: UIViewController {
             ))
             return
         }
-        
-        // Validate website URL if provided
         let websiteText = websiteTextField.text?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
         if !websiteText.isEmpty {
             guard URL(string: websiteText) != nil else {
@@ -422,8 +365,6 @@ final class EditProfileViewController: UIViewController {
                 return
             }
         }
-        
-        // Create updated user
         let updatedUser = User(
             id: user.id,
             name: name.trimmingCharacters(in: .whitespacesAndNewlines),
@@ -435,12 +376,8 @@ final class EditProfileViewController: UIViewController {
         )
         
         editedUser = updatedUser
-        
-        // Show loading
         showLoading()
         saveButton.isEnabled = false
-        
-        // Simulate network delay with error handling
         DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) { [weak self] in
             if Bool.random() && Int.random(in: 1...10) <= 1 {
                 self?.hideLoading()
@@ -465,8 +402,6 @@ final class EditProfileViewController: UIViewController {
         alert.addAction(UIAlertAction(title: "OK", style: .default))
         present(alert, animated: true)
     }
-    
-    // MARK: - New Methods
     
     private func updateSaveButtonVisibility() {
         saveButton.isHidden = !hasChanges
@@ -542,8 +477,6 @@ final class EditProfileViewController: UIViewController {
         currentAvatarImage = nil
         avatarWasRemoved = true
         checkForChanges()
-        
-        // Send notification about avatar removal
         let notification = ["image": NSNull()]
         NotificationCenter.default.post(
             name: .avatarDidChange,
@@ -552,13 +485,8 @@ final class EditProfileViewController: UIViewController {
     }
 }
 
-// MARK: - ErrorView & LoadingView
-
 extension EditProfileViewController: ErrorView, LoadingView {
-    // ErrorView and LoadingView implementations are inherited from the protocols
 }
-
-// MARK: - PHPickerViewControllerDelegate
 
 @available(iOS 14.0, *)
 extension EditProfileViewController: PHPickerViewControllerDelegate {
@@ -576,8 +504,6 @@ extension EditProfileViewController: PHPickerViewControllerDelegate {
                     self?.avatarImageView.tintColor = nil
                     self?.avatarWasRemoved = false
                     self?.checkForChanges()
-                    
-                    // Send notification about avatar change
                     let notification = ["image": image]
                     NotificationCenter.default.post(
                         name: .avatarDidChange,
@@ -588,8 +514,6 @@ extension EditProfileViewController: PHPickerViewControllerDelegate {
         }
     }
 }
-
-// MARK: - UIImagePickerControllerDelegate
 
 extension EditProfileViewController: UIImagePickerControllerDelegate, UINavigationControllerDelegate {
     
@@ -602,8 +526,6 @@ extension EditProfileViewController: UIImagePickerControllerDelegate, UINavigati
             avatarImageView.tintColor = nil
             avatarWasRemoved = false
             checkForChanges()
-            
-            // Send notification about avatar change
             let notification = ["image": editedImage]
             NotificationCenter.default.post(
                 name: .avatarDidChange,
@@ -615,8 +537,6 @@ extension EditProfileViewController: UIImagePickerControllerDelegate, UINavigati
             avatarImageView.tintColor = nil
             avatarWasRemoved = false
             checkForChanges()
-            
-            // Send notification about avatar change
             let notification = ["image": originalImage]
             NotificationCenter.default.post(
                 name: .avatarDidChange,

@@ -37,8 +37,6 @@ final class NftDetailViewController: UIViewController {
 
     private var cellModels: [NftDetailCellModel] = []
 
-    // MARK: - Init
-
     init(presenter: NftDetailPresenter) {
         self.presenter = presenter
         super.init(nibName: nil, bundle: nil)
@@ -48,8 +46,6 @@ final class NftDetailViewController: UIViewController {
         fatalError("init(coder:) has not been implemented")
     }
 
-    // MARK: - Functions
-
     override func viewDidLoad() {
         super.viewDidLoad()
 
@@ -57,8 +53,6 @@ final class NftDetailViewController: UIViewController {
         setupLayout()
         presenter.viewDidLoad()
     }
-
-    // MARK: - private functions
 
     private func setupLayout() {
         collectionView.addSubview(activityIndicator)
@@ -89,8 +83,6 @@ final class NftDetailViewController: UIViewController {
     }
 }
 
-// MARK: - NftDetailView
-
 extension NftDetailViewController: NftDetailView {
     func displayCells(_ cellModels: [NftDetailCellModel]) {
         self.cellModels = cellModels
@@ -98,8 +90,6 @@ extension NftDetailViewController: NftDetailView {
         pageControl.numberOfItems = cellModels.count
     }
 }
-
-// MARK: - UICollectionViewDataSource
 
 extension NftDetailViewController: UICollectionViewDataSource {
     func collectionView(_ collectionView: UICollectionView, numberOfItemsInSection section: Int) -> Int {
@@ -116,8 +106,6 @@ extension NftDetailViewController: UICollectionViewDataSource {
         return cell
     }
 }
-
-// MARK: - UICollectionViewDelegateFlowLayout
 
 extension NftDetailViewController: UICollectionViewDelegateFlowLayout {
     func collectionView(_ collectionView: UICollectionView,

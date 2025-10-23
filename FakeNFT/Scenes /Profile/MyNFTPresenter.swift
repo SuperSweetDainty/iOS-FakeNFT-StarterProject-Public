@@ -104,9 +104,24 @@ final class MyNFTPresenterImpl: MyNFTPresenter {
         } else {
             likedNFTs.remove(nftId)
         }
+        
+        // Save locally immediately
         saveLikedNFTs()
-        postLikedNFTsNotification()
+        
+        // Update UI optimistically
         view?.displayNFTs(nfts, likedNFTs: likedNFTs)
+        
+        // Sync with server
+        servicesAssembly.profileService.updateLikes(Array(likedNFTs)) { [weak self] result in
+            switch result {
+            case .success:
+                self?.postLikedNFTsNotification()
+            case .failure:
+                // If server update fails, we keep local changes
+                // Could implement retry logic or show error to user
+                break
+            }
+        }
     }
     
     // MARK: - Private Functions
@@ -131,28 +146,54 @@ final class MyNFTPresenterImpl: MyNFTPresenter {
     }
     
     private func loadNFTs() {
-        DispatchQueue.global(qos: .userInitiated).async { [weak self] in
+        // Load profile to get user's NFTs and likes
+        servicesAssembly.profileService.loadProfile { [weak self] result in
             guard let self = self else { return }
             
-            let nfts = self.createTestNFTs()
-            
-            DispatchQueue.main.async {
-                self.loadLikedNFTs()
-                self.state = nfts.isEmpty ? .empty : .loaded(nfts)
+            switch result {
+            case .success(let user):
+                self.likedNFTs = Set(user.likes)
+                
+                // Load user's NFTs details
+                if user.nfts.isEmpty {
+                    DispatchQueue.main.async {
+                        self.state = .empty
+                    }
+                } else {
+                    self.loadUserNFTsDetails(ids: user.nfts)
+                }
+                
+            case .failure:
+                // Try to load from local storage
+                DispatchQueue.global(qos: .userInitiated).async {
+                    self.loadLikedNFTs()
+                    
+                    DispatchQueue.main.async {
+                        self.state = .failed(NetworkClientError.urlSessionError)
+                    }
+                }
             }
         }
     }
     
-    private func createTestNFTs() -> [Nft] {
-        return [
-            Nft(id: "1", name: "Lilo", price: 1.78, rating: 3, images: [URL(string: "https://example.com/lilo.png")!], author: "John Doe"),
-            Nft(id: "2", name: "Spring", price: 1.78, rating: 3, images: [URL(string: "https://example.com/spring.png")!], author: "John Doe"),
-            Nft(id: "3", name: "April", price: 1.78, rating: 3, images: [URL(string: "https://example.com/april.png")!], author: "John Doe"),
-            Nft(id: "4", name: "Archie", price: 1.78, rating: 3, images: [URL(string: "https://example.com/archie.png")!], author: "John Doe"),
-            Nft(id: "5", name: "Pixi", price: 1.78, rating: 3, images: [URL(string: "https://example.com/pixi.png")!], author: "John Doe"),
-            Nft(id: "6", name: "Melissa", price: 1.78, rating: 5, images: [URL(string: "https://example.com/melissa.png")!], author: "John Doe"),
-            Nft(id: "7", name: "Daisy", price: 1.78, rating: 1, images: [URL(string: "https://example.com/daisy.png")!], author: "John Doe")
-        ]
+    private func loadUserNFTsDetails(ids: [String]) {
+        servicesAssembly.nftService.loadNftList(ids: ids) { [weak self] result in
+            guard let self = self else { return }
+            
+            DispatchQueue.main.async {
+                switch result {
+                case .success(let nfts):
+                    if nfts.isEmpty {
+                        self.state = .empty
+                    } else {
+                        self.state = .loaded(nfts)
+                    }
+                    
+                case .failure(let error):
+                    self.state = .failed(error)
+                }
+            }
+        }
     }
     
     private func applySort() {
@@ -164,7 +205,11 @@ final class MyNFTPresenterImpl: MyNFTPresenter {
         case .rating:
             sortedNFTs.sort { $0.rating > $1.rating }
         case .name:
-            sortedNFTs.sort { $0.name < $1.name }
+            sortedNFTs.sort { 
+                let name1 = extractName(from: $0.images.first)
+                let name2 = extractName(from: $1.images.first)
+                return name1 < name2
+            }
         }
         
         nfts = sortedNFTs
@@ -199,6 +244,34 @@ final class MyNFTPresenterImpl: MyNFTPresenter {
     
     private func postLikedNFTsNotification() {
         NotificationCenter.default.post(name: .likedNFTsDidChange, object: nil)
+    }
+    
+    private func extractName(from imageURL: URL?) -> String {
+        guard let url = imageURL else { return "NFT" }
+        
+        let urlString = url.absoluteString
+        let components = urlString.components(separatedBy: "/")
+        
+        // Ищем название NFT в URL
+        // Пример: https://code.s3.yandex.net/Mobile/iOS/NFT/Gray/Piper/1.png
+        // Нужно извлечь "Piper"
+        
+        for (index, component) in components.enumerated() {
+            if component == "NFT" && index + 2 < components.count {
+                // После "NFT" идут цвет и название
+                let nameComponent = components[index + 2]
+                return nameComponent.capitalized
+            }
+        }
+        
+        // Fallback - ищем последний значимый компонент
+        for component in components.reversed() {
+            if !component.isEmpty && component != "1.png" && component != "2.png" && component != "3.png" {
+                return component.capitalized
+            }
+        }
+        
+        return "NFT"
     }
 }
 

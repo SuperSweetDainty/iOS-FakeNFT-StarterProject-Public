@@ -91,14 +91,28 @@ final class FavoritesNFTPresenterImpl: FavoritesNFTPresenter {
         } else {
             likedNFTs.remove(nftId)
         }
+        
+        // Save locally immediately
         saveLikedNFTs()
-        postLikedNFTsNotification()
         updateFavoriteNFTs()
         
+        // Update UI optimistically
         if favoriteNFTs.isEmpty {
             view?.showEmptyState()
         } else {
             view?.displayNFTs(favoriteNFTs, likedNFTs: likedNFTs)
+        }
+        
+        // Sync with server
+        servicesAssembly.profileService.updateLikes(Array(likedNFTs)) { [weak self] result in
+            switch result {
+            case .success:
+                self?.postLikedNFTsNotification()
+            case .failure:
+                // If server update fails, we keep local changes
+                // Could implement retry logic or show error to user
+                break
+            }
         }
     }
     
@@ -126,37 +140,66 @@ final class FavoritesNFTPresenterImpl: FavoritesNFTPresenter {
     }
     
     private func loadNFTs() {
-        DispatchQueue.global(qos: .userInitiated).async { [weak self] in
+        // Load profile to get liked NFTs
+        servicesAssembly.profileService.loadProfile { [weak self] result in
             guard let self = self else { return }
             
-            let nfts = self.createTestNFTs()
-            let likedNFTs = self.loadLikedNFTsSync()
-            let favoriteNFTs = nfts.filter { likedNFTs.contains($0.id) }
-            
-            DispatchQueue.main.async {
-                self.allNFTs = nfts
-                self.likedNFTs = likedNFTs
-                self.favoriteNFTs = favoriteNFTs
+            switch result {
+            case .success(let user):
+                self.likedNFTs = Set(user.likes)
                 
-                if self.favoriteNFTs.isEmpty {
-                    self.state = .empty
+                // Load liked NFTs details
+                if user.likes.isEmpty {
+                    DispatchQueue.main.async {
+                        self.state = .empty
+                    }
                 } else {
-                    self.state = .loaded(self.favoriteNFTs)
+                    self.loadLikedNFTsDetails(ids: user.likes)
+                }
+                
+            case .failure:
+                // Try to load from local storage
+                DispatchQueue.global(qos: .userInitiated).async {
+                    let localLikes = self.loadLikedNFTsSync()
+                    
+                    DispatchQueue.main.async {
+                        self.likedNFTs = localLikes
+                        
+                        if localLikes.isEmpty {
+                            self.state = .empty
+                        } else {
+                            self.loadLikedNFTsDetails(ids: Array(localLikes))
+                        }
+                    }
                 }
             }
         }
     }
     
-    private func createTestNFTs() -> [Nft] {
-        return [
-            Nft(id: "1", name: "Lilo", price: 1.78, rating: 3, images: [URL(string: "https://example.com/lilo.png")!], author: "John Doe"),
-            Nft(id: "2", name: "Spring", price: 1.78, rating: 3, images: [URL(string: "https://example.com/spring.png")!], author: "John Doe"),
-            Nft(id: "3", name: "April", price: 1.78, rating: 3, images: [URL(string: "https://example.com/april.png")!], author: "John Doe"),
-            Nft(id: "4", name: "Archie", price: 1.78, rating: 3, images: [URL(string: "https://example.com/archie.png")!], author: "John Doe"),
-            Nft(id: "5", name: "Pixi", price: 1.78, rating: 3, images: [URL(string: "https://example.com/pixi.png")!], author: "John Doe"),
-            Nft(id: "6", name: "Melissa", price: 1.78, rating: 5, images: [URL(string: "https://example.com/melissa.png")!], author: "John Doe"),
-            Nft(id: "7", name: "Daisy", price: 1.78, rating: 1, images: [URL(string: "https://example.com/daisy.png")!], author: "John Doe")
-        ]
+    private func loadLikedNFTsDetails(ids: [String]) {
+        servicesAssembly.nftService.loadNftList(ids: ids) { [weak self] result in
+            guard let self = self else { return }
+            
+            DispatchQueue.main.async {
+                switch result {
+                case .success(let nfts):
+                    // Сохраняем все загруженные NFT
+                    self.allNFTs = nfts
+                    
+                    // Фильтруем только избранные NFT
+                    self.updateFavoriteNFTs()
+                    
+                    if self.favoriteNFTs.isEmpty {
+                        self.state = .empty
+                    } else {
+                        self.state = .loaded(self.favoriteNFTs)
+                    }
+                    
+                case .failure:
+                    self.state = .failed(.networkError)
+                }
+            }
+        }
     }
     
     private func updateFavoriteNFTs() {

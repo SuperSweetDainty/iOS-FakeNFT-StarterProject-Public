@@ -6,6 +6,7 @@ final class FavoritesNFTCollectionViewCell: UICollectionViewCell, ReuseIdentifyi
     
     private var onLikeTapped: ((Bool) -> Void)?
     private var isLiked: Bool = false
+    private var imageCacheService: ImageCacheService?
     
     // MARK: - UI Elements
     
@@ -73,6 +74,18 @@ final class FavoritesNFTCollectionViewCell: UICollectionViewCell, ReuseIdentifyi
         fatalError("init(coder:) has not been implemented")
     }
     
+    override func prepareForReuse() {
+        super.prepareForReuse()
+        
+        // Cancel any ongoing image load
+        if let cacheService = imageCacheService {
+            nftImageView.cancelImageLoad(cacheService: cacheService)
+        }
+        
+        // Reset image
+        nftImageView.image = nil
+    }
+    
     // MARK: - Setup
     
     private func setupUI() {
@@ -125,31 +138,22 @@ final class FavoritesNFTCollectionViewCell: UICollectionViewCell, ReuseIdentifyi
     
     // MARK: - Configuration
     
-    func configure(with nft: Nft, isLiked: Bool, onLikeTapped: @escaping (Bool) -> Void) {
+    func configure(with nft: Nft, isLiked: Bool, imageCacheService: ImageCacheService, onLikeTapped: @escaping (Bool) -> Void) {
         self.isLiked = isLiked
         self.onLikeTapped = onLikeTapped
+        self.imageCacheService = imageCacheService
         
-        nameLabel.text = nft.name
+        // name = автор, название NFT извлекается из URL изображения
+        nameLabel.text = extractName(from: nft.images.first)  // Название NFT из URL
         priceLabel.text = "\(nft.price) ETH"
         
-        // Set NFT image based on name
-        switch nft.name {
-        case "Lilo":
-            nftImageView.image = UIImage(resource: .lilo)
-        case "Spring":
-            nftImageView.image = UIImage(resource: .spring)
-        case "April":
-            nftImageView.image = UIImage(resource: .april)
-        case "Pixi":
-            nftImageView.image = UIImage(resource: .pixi)
-        case "Melissa":
-            nftImageView.image = UIImage(resource: .melissa)
-        case "Daisy":
-            nftImageView.image = UIImage(resource: .daisy)
-        case "Archie":
-            nftImageView.image = UIImage(resource: .archie)
-        default:
-            nftImageView.image = UIImage(resource: .lilo)
+        // Load image from network with caching
+        if let imageURL = nft.images.first {
+            let nftName = extractName(from: imageURL)
+            let placeholder = placeholderImage(for: nftName)  // Используем извлеченное название для placeholder
+            nftImageView.loadImage(from: imageURL, placeholder: placeholder, cacheService: imageCacheService)
+        } else {
+            nftImageView.image = placeholderImage(for: "NFT")  // Fallback placeholder
         }
         
         // Configure like button
@@ -163,6 +167,49 @@ final class FavoritesNFTCollectionViewCell: UICollectionViewCell, ReuseIdentifyi
         
         // Configure rating
         setupRatingStars(rating: nft.rating)
+    }
+    
+    private func extractName(from imageURL: URL?) -> String {
+        guard let url = imageURL else { return "NFT" }
+        
+        let urlString = url.absoluteString
+        let components = urlString.components(separatedBy: "/")
+        
+        // Ищем название NFT в URL
+        // Пример: https://code.s3.yandex.net/Mobile/iOS/NFT/Gray/Piper/1.png
+        // Нужно извлечь "Piper"
+        
+        for (index, component) in components.enumerated() {
+            if component == "NFT" && index + 2 < components.count {
+                // После "NFT" идут цвет и название
+                let nameComponent = components[index + 2]
+                return nameComponent.capitalized
+            }
+        }
+        
+        // Fallback - ищем последний значимый компонент
+        for component in components.reversed() {
+            if !component.isEmpty && component != "1.png" && component != "2.png" && component != "3.png" {
+                return component.capitalized
+            }
+        }
+        
+        return "NFT"
+    }
+    
+    private func placeholderImage(for nftName: String) -> UIImage {
+        switch nftName {
+        case "Lilo": return UIImage(resource: .lilo)
+        case "Spring": return UIImage(resource: .spring)
+        case "April": return UIImage(resource: .april)
+        case "Pixi": return UIImage(resource: .pixi)
+        case "Melissa": return UIImage(resource: .melissa)
+        case "Daisy": return UIImage(resource: .daisy)
+        case "Archie": return UIImage(resource: .archie)
+        case "Piper": return UIImage(resource: .lilo)  // Fallback для Piper
+        case "Mowgli": return UIImage(resource: .spring)  // Fallback для Mowgli
+        default: return UIImage(resource: .lilo)
+        }
     }
     
     private func setupRatingStars(rating: Int) {

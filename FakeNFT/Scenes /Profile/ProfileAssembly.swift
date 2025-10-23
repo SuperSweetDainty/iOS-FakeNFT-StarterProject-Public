@@ -15,11 +15,7 @@ public final class ProfileAssembly {
         )
         let viewController = ProfileViewController(presenter: presenter, servicesAssembly: servicesAssembler)
         presenter.view = viewController
-        
-        // Wrap in navigation controller for navigation support
         let navigationController = UINavigationController(rootViewController: viewController)
-        
-        // Hide navigation bar initially - it will be shown after profile loads
         navigationController.setNavigationBarHidden(true, animated: false)
         
         return navigationController

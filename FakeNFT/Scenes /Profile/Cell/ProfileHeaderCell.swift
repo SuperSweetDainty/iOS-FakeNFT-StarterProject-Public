@@ -1,7 +1,10 @@
 import UIKit
-import Kingfisher
 
 final class ProfileHeaderCell: UITableViewCell {
+    
+    // MARK: - Properties
+    
+    private var imageCacheService: ImageCacheService?
     
     // MARK: - UI Elements
     
@@ -38,9 +41,6 @@ final class ProfileHeaderCell: UITableViewCell {
         return button
     }()
     
-    
-    // MARK: - Properties
-    
     private var onWebsiteTap: (() -> Void)?
     
     // MARK: - Init
@@ -52,6 +52,18 @@ final class ProfileHeaderCell: UITableViewCell {
     
     required init?(coder: NSCoder) {
         fatalError("init(coder:) has not been implemented")
+    }
+    
+    override func prepareForReuse() {
+        super.prepareForReuse()
+        
+        // Cancel any ongoing image load
+        if let cacheService = imageCacheService {
+            avatarImageView.cancelImageLoad(cacheService: cacheService)
+        }
+        
+        // Reset avatar
+        avatarImageView.image = nil
     }
     
     // MARK: - Setup
@@ -109,21 +121,22 @@ final class ProfileHeaderCell: UITableViewCell {
     
     // MARK: - Configuration
     
-    func configure(with user: User, onWebsiteTap: @escaping () -> Void) {
+    func configure(with user: User, imageCacheService: ImageCacheService, onWebsiteTap: @escaping () -> Void) {
         self.onWebsiteTap = onWebsiteTap
+        self.imageCacheService = imageCacheService
         
         nameLabel.text = user.name
         descriptionLabel.text = user.description
         
         if let avatarURL = user.avatar {
-            avatarImageView.kf.setImage(with: avatarURL)
+            let placeholder = UIImage(systemName: "person.circle.fill")
+            avatarImageView.loadImage(from: avatarURL, placeholder: placeholder, cacheService: imageCacheService)
+            avatarImageView.tintColor = .systemGray3
         } else {
-            // Set system icon directly without clearing Kingfisher
+            // Устанавливаем placeholder сразу
             avatarImageView.image = UIImage(systemName: "person.circle.fill")
             avatarImageView.tintColor = .systemGray3
             avatarImageView.backgroundColor = .clear
-            
-            print("DEBUG: Setting system icon directly")
         }
         
         if let website = user.website {
@@ -138,17 +151,13 @@ final class ProfileHeaderCell: UITableViewCell {
     
     func updateAvatar(_ image: UIImage?) {
         if let image = image {
-            // Set new image directly
             avatarImageView.image = image
             avatarImageView.tintColor = nil
             avatarImageView.backgroundColor = .clear
         } else {
-            // Set system icon directly
             avatarImageView.image = UIImage(systemName: "person.circle.fill")
             avatarImageView.tintColor = .systemGray3
             avatarImageView.backgroundColor = .clear
-            
-            print("DEBUG: updateAvatar setting system icon directly")
         }
     }
 }

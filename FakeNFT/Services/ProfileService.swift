@@ -7,7 +7,8 @@ extension Notification.Name {
 
 protocol ProfileService {
     func loadProfile(completion: @escaping (Result<User, Error>) -> Void)
-    func updateProfile(_ user: User, completion: @escaping (Result<User, Error>) -> Void)
+    func updateProfile(name: String?, description: String?, website: String?, completion: @escaping (Result<User, Error>) -> Void)
+    func updateLikes(_ likes: [String], completion: @escaping (Result<User, Error>) -> Void)
 }
 
 final class ProfileServiceImpl: ProfileService {
@@ -21,51 +22,68 @@ final class ProfileServiceImpl: ProfileService {
     }
     
     func loadProfile(completion: @escaping (Result<User, Error>) -> Void) {
-        // Check storage first
-        if let cachedUser = storage.getProfile() {
-            DispatchQueue.main.async {
-                completion(.success(cachedUser))
-            }
-            return
-        }
+        let request = GetProfileRequest(profileId: "1")
         
-        // TODO: Implement actual network request
-        // For now, return mock data
-        DispatchQueue.global(qos: .userInitiated).asyncAfter(deadline: .now() + 1.0) {
-            let mockUser = User(
-                id: "1",
-                name: "Иван Иванов",
-                description: "Дизайнер, создатель NFT",
-                avatar: URL(string: "https://example.com/avatar.jpg"),
-                website: URL(string: "https://example.com"),
-                nfts: ["1", "2", "3"],
-                likes: ["4", "5", "6"]
-            )
-            
-            // Save to storage
-            self.storage.saveProfile(mockUser)
-            
-            DispatchQueue.main.async {
-                completion(.success(mockUser))
+        networkClient.send(request: request, type: User.self) { [weak self] result in
+            switch result {
+            case .success(let user):
+                self?.storage.saveProfile(user)
+                completion(.success(user))
+            case .failure(let error):
+                if let cachedUser = self?.storage.getProfile() {
+                    completion(.success(cachedUser))
+                } else {
+                    completion(.failure(error))
+                }
             }
         }
     }
     
-    func updateProfile(_ user: User, completion: @escaping (Result<User, Error>) -> Void) {
-        // TODO: Implement actual network request
-        DispatchQueue.global(qos: .userInitiated).asyncAfter(deadline: .now() + 1.0) {
-            DispatchQueue.main.async {
-                // Save to storage
-                self.storage.saveProfile(user)
+    func updateProfile(name: String?, description: String?, website: String?, completion: @escaping (Result<User, Error>) -> Void) {
+        let dto = UpdateProfileDto(
+            name: name,
+            description: description,
+            website: website,
+            likes: nil
+        )
+        
+        let request = UpdateProfileRequest(profileId: "1", profileDto: dto)
+        
+        networkClient.send(request: request, type: User.self) { [weak self] result in
+            switch result {
+            case .success(let user):
+                self?.storage.saveProfile(user)
                 
-                // Send notification about profile update
-                let notification = ["user": user]
                 NotificationCenter.default.post(
                     name: .profileDidUpdate,
-                    object: notification
+                    object: nil,
+                    userInfo: ["user": user]
                 )
                 
                 completion(.success(user))
+            case .failure(let error):
+                completion(.failure(error))
+            }
+        }
+    }
+    
+    func updateLikes(_ likes: [String], completion: @escaping (Result<User, Error>) -> Void) {
+        let dto = UpdateProfileDto(
+            name: nil,
+            description: nil,
+            website: nil,
+            likes: likes
+        )
+        
+        let request = UpdateProfileRequest(profileId: "1", profileDto: dto)
+        
+        networkClient.send(request: request, type: User.self) { [weak self] result in
+            switch result {
+            case .success(let user):
+                self?.storage.saveProfile(user)
+                completion(.success(user))
+            case .failure(let error):
+                completion(.failure(error))
             }
         }
     }

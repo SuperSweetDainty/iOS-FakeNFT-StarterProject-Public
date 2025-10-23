@@ -15,14 +15,6 @@ final class WebViewController: UIViewController {
         return webView
     }()
     
-    private lazy var closeButton: UIButton = {
-        let button = UIButton()
-        button.tintColor = .closeButton
-        button.setImage(UIImage(named: "close"), for: .normal)
-        button.addTarget(self, action: #selector(closeButtonTapped), for: .touchUpInside)
-        return button
-    }()
-    
     private lazy var activityIndicator: UIActivityIndicatorView = {
         let indicator = UIActivityIndicatorView(style: .medium)
         indicator.hidesWhenStopped = true
@@ -44,8 +36,36 @@ final class WebViewController: UIViewController {
     
     override func viewDidLoad() {
         super.viewDidLoad()
+        setupNavigationBar()
         setupUI()
         loadURL()
+    }
+    
+    // MARK: - Navigation Bar Setup
+    
+    private func setupNavigationBar() {
+        // Настройка navigation bar
+        navigationItem.title = "Веб-страница"
+        
+        // Кнопка закрытия слева (стандартный паттерн для модальных экранов)
+        navigationItem.rightBarButtonItem = UIBarButtonItem(
+            image: UIImage(systemName: "xmark"),
+            style: .plain,
+            target: self,
+            action: #selector(closeButtonTapped)
+        )
+        navigationItem.rightBarButtonItem?.tintColor = UIColor(hexString: "1A1B22")
+        
+        // Или используем иконку "close" если она есть
+        if let closeImage = UIImage(named: "close") {
+            navigationItem.rightBarButtonItem = UIBarButtonItem(
+                image: closeImage,
+                style: .plain,
+                target: self,
+                action: #selector(closeButtonTapped)
+            )
+            navigationItem.rightBarButtonItem?.tintColor = UIColor(hexString: "1A1B22")
+        }
     }
     
     // MARK: - Setup
@@ -53,7 +73,7 @@ final class WebViewController: UIViewController {
     private func setupUI() {
         view.backgroundColor = .background
         
-        [webView, closeButton, activityIndicator].forEach {
+        [webView, activityIndicator].forEach {
             $0.translatesAutoresizingMaskIntoConstraints = false
             view.addSubview($0)
         }
@@ -63,11 +83,7 @@ final class WebViewController: UIViewController {
     
     private func setupConstraints() {
         NSLayoutConstraint.activate([
-            closeButton.topAnchor.constraint(equalTo: view.safeAreaLayoutGuide.topAnchor, constant: 16),
-            closeButton.trailingAnchor.constraint(equalTo: view.trailingAnchor, constant: -16),
-            closeButton.widthAnchor.constraint(equalToConstant: 24),
-            closeButton.heightAnchor.constraint(equalToConstant: 24),
-            
+            // WebView - занимает весь экран под navigation bar
             webView.topAnchor.constraint(equalTo: view.safeAreaLayoutGuide.topAnchor),
             webView.leadingAnchor.constraint(equalTo: view.leadingAnchor),
             webView.trailingAnchor.constraint(equalTo: view.trailingAnchor),

@@ -8,6 +8,7 @@ final class MyNFTCell: UITableViewCell, ReuseIdentifying {
     
     private var onLikeTapped: ((Bool) -> Void)?
     private var isLiked: Bool = false
+    private var imageCacheService: ImageCacheService?
     
     // MARK: - UI Elements
     
@@ -95,6 +96,18 @@ final class MyNFTCell: UITableViewCell, ReuseIdentifying {
         fatalError("init(coder:) has not been implemented")
     }
     
+    override func prepareForReuse() {
+        super.prepareForReuse()
+        
+        // Cancel any ongoing image load
+        if let cacheService = imageCacheService {
+            nftImageView.cancelImageLoad(cacheService: cacheService)
+        }
+        
+        // Reset image
+        nftImageView.image = nil
+    }
+    
     // MARK: - Setup
     
     private func setupUI() {
@@ -124,44 +137,62 @@ final class MyNFTCell: UITableViewCell, ReuseIdentifying {
             
             nameLabel.topAnchor.constraint(equalTo: containerView.topAnchor, constant: 23),
             nameLabel.leadingAnchor.constraint(equalTo: nftImageView.trailingAnchor, constant: 20),
+            nameLabel.trailingAnchor.constraint(lessThanOrEqualTo: containerView.trailingAnchor, constant: -16),
             
             ratingStackView.topAnchor.constraint(equalTo: nameLabel.bottomAnchor, constant: 4),
             ratingStackView.leadingAnchor.constraint(equalTo: nftImageView.trailingAnchor, constant: 20),
             
             authorLabel.topAnchor.constraint(equalTo: ratingStackView.bottomAnchor, constant: 4),
             authorLabel.leadingAnchor.constraint(equalTo: nftImageView.trailingAnchor, constant: 20),
+            authorLabel.trailingAnchor.constraint(lessThanOrEqualTo: priceLabel.trailingAnchor, constant: -39),
             
             priceLabel.topAnchor.constraint(equalTo: containerView.topAnchor, constant: 33),
-            priceLabel.leadingAnchor.constraint(equalTo: authorLabel.trailingAnchor, constant: 39),
+            priceLabel.trailingAnchor.constraint(equalTo: containerView.trailingAnchor, constant: -81),
             
             priceValueLabel.topAnchor.constraint(equalTo: priceLabel.bottomAnchor, constant: 2),
-            priceValueLabel.leadingAnchor.constraint(equalTo: priceLabel.leadingAnchor, constant: -1)
+            priceValueLabel.leadingAnchor.constraint(equalTo: priceLabel.leadingAnchor)
         ])
     }
     
-    func configure(with nft: Nft, isLiked: Bool, onLikeTapped: @escaping (Bool) -> Void) {
+    func configure(with nft: Nft, isLiked: Bool, imageCacheService: ImageCacheService, onLikeTapped: @escaping (Bool) -> Void) {
         self.isLiked = isLiked
         self.onLikeTapped = onLikeTapped
+        self.imageCacheService = imageCacheService
         
-        nameLabel.text = nft.name
-        authorLabel.text = "от \(nft.author)"
+        // name = автор, название NFT извлекается из URL изображения
+        nameLabel.text = extractName(from: nft.images.first)  // Название NFT из URL
+        authorLabel.text = "от \(nft.name)"  // Имя автора
+        
         priceValueLabel.text = "\(nft.price) ETH"
         
-        switch nft.name {
-        case "Lilo": nftImageView.image = UIImage(resource: .lilo)
-        case "Spring": nftImageView.image = UIImage(resource: .spring)
-        case "April": nftImageView.image = UIImage(resource: .april)
-        case "Pixi": nftImageView.image = UIImage(resource: .pixi)
-        case "Melissa": nftImageView.image = UIImage(resource: .melissa)
-        case "Daisy": nftImageView.image = UIImage(resource: .daisy)
-        case "Archie": nftImageView.image = UIImage(resource: .archie)
-        default: nftImageView.image = UIImage(resource: .lilo)
+        // Load image from network with caching
+        if let imageURL = nft.images.first {
+            let nftName = extractName(from: imageURL)
+            let placeholder = placeholderImage(for: nftName)  // Используем извлеченное название для placeholder
+            nftImageView.loadImage(from: imageURL, placeholder: placeholder, cacheService: imageCacheService)
+        } else {
+            nftImageView.image = placeholderImage(for: "NFT")  // Fallback placeholder
         }
         
         likeButton.isSelected = isLiked
         likeButton.tintColor = isLiked ? UIColor(hexString: "F56B6C") : .white
         
         setupRatingStars(rating: nft.rating)
+    }
+    
+    private func placeholderImage(for nftName: String) -> UIImage {
+        switch nftName {
+        case "Lilo": return UIImage(resource: .lilo)
+        case "Spring": return UIImage(resource: .spring)
+        case "April": return UIImage(resource: .april)
+        case "Pixi": return UIImage(resource: .pixi)
+        case "Melissa": return UIImage(resource: .melissa)
+        case "Daisy": return UIImage(resource: .daisy)
+        case "Archie": return UIImage(resource: .archie)
+        case "Piper": return UIImage(resource: .lilo)  // Fallback для Piper
+        case "Mowgli": return UIImage(resource: .spring)  // Fallback для Mowgli
+        default: return UIImage(resource: .nftLoading)
+        }
     }
     
     private func setupRatingStars(rating: Int) {
@@ -181,6 +212,61 @@ final class MyNFTCell: UITableViewCell, ReuseIdentifying {
             
             ratingStackView.addArrangedSubview(starImageView)
         }
+    }
+    
+    private func extractName(from imageURL: URL?) -> String {
+        guard let url = imageURL else { return "NFT" }
+        
+        let urlString = url.absoluteString
+        let components = urlString.components(separatedBy: "/")
+        
+        // Ищем название NFT в URL
+        // Пример: https://code.s3.yandex.net/Mobile/iOS/NFT/Gray/Piper/1.png
+        // Нужно извлечь "Piper"
+        
+        for (index, component) in components.enumerated() {
+            if component == "NFT" && index + 2 < components.count {
+                // После "NFT" идут цвет и название
+                let nameComponent = components[index + 2]
+                return nameComponent.capitalized
+            }
+        }
+        
+        // Fallback - ищем последний значимый компонент
+        for component in components.reversed() {
+            if !component.isEmpty && component != "1.png" && component != "2.png" && component != "3.png" {
+                return component.capitalized
+            }
+        }
+        
+        return "NFT"
+    }
+    
+    private func extractAuthorName(from urlString: String) -> String {
+        // Пытаемся извлечь имя из URL
+        if let url = URL(string: urlString) {
+            let host = url.host ?? ""
+            // Убираем домен и оставляем только имя
+            let components = host.components(separatedBy: ".")
+            if let firstComponent = components.first, !firstComponent.isEmpty {
+                // Заменяем подчеркивания на пробелы и форматируем
+                let formattedName = firstComponent
+                    .replacingOccurrences(of: "_", with: " ")
+                    .capitalized
+                return formattedName
+            }
+        }
+        
+        // Fallback - возвращаем часть URL
+        let components = urlString.components(separatedBy: "/")
+        if let lastComponent = components.last, !lastComponent.isEmpty {
+            let formattedName = lastComponent
+                .replacingOccurrences(of: "_", with: " ")
+                .capitalized
+            return formattedName
+        }
+        
+        return "Автор"
     }
     
     @objc private func likeButtonTapped() {
@@ -208,6 +294,7 @@ final class MyNFTViewController: UIViewController {
         let tableView = UITableView(frame: .zero, style: .plain)
         tableView.delegate = self
         tableView.dataSource = self
+        tableView.prefetchDataSource = self
         tableView.backgroundColor = .background
         tableView.showsVerticalScrollIndicator = false
         tableView.separatorStyle = .none
@@ -401,7 +488,11 @@ extension MyNFTViewController: UITableViewDataSource {
         let nft = nfts[indexPath.section]
         let isLiked = likedNFTs.contains(nft.id)
         
-        cell.configure(with: nft, isLiked: isLiked) { [weak self] (isLiked: Bool) in
+        cell.configure(
+            with: nft,
+            isLiked: isLiked,
+            imageCacheService: servicesAssembly.imageCacheService
+        ) { [weak self] (isLiked: Bool) in
             self?.presenter.didToggleLike(for: nft.id, isLiked: isLiked)
         }
         
@@ -430,6 +521,20 @@ extension MyNFTViewController: UITableViewDelegate {
     func tableView(_ tableView: UITableView, didSelectRowAt indexPath: IndexPath) {
         tableView.deselectRow(at: indexPath, animated: true)
         presenter.didSelectNFT(at: indexPath.section)
+    }
+}
+
+// MARK: - UITableViewDataSourcePrefetching
+
+extension MyNFTViewController: UITableViewDataSourcePrefetching {
+    
+    func tableView(_ tableView: UITableView, prefetchRowsAt indexPaths: [IndexPath]) {
+        let imageURLs = indexPaths.compactMap { indexPath -> URL? in
+            guard indexPath.section < nfts.count else { return nil }
+            return nfts[indexPath.section].images.first
+        }
+        
+        servicesAssembly.imageCacheService.prefetchImages(urls: imageURLs)
     }
 }
 
