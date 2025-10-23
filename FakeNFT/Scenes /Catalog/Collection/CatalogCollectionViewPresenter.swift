@@ -130,9 +130,8 @@ final class CatalogCollectionViewPresenter: CatalogCollectionViewPresenterProtoc
         NotificationCenter.default.post(
             name: .nftCartStateChanged,
             object: nil,
-            userInfo: ["nftId": nftId, "isInCart": nftCollectionCell[index].isInCart]
+            userInfo: ["nftId": nftId, "isInCart": newCartState]
         )
-        print("Cart tapped for NFT: \(nftId)")
     }
     
     func didTapRetry() {
@@ -183,12 +182,18 @@ final class CatalogCollectionViewPresenter: CatalogCollectionViewPresenterProtoc
                     )
                 }
                 
-                self.nftCollectionCell = nftCellModels
+                let sortedModels = nftCellModels.sorted { first, second in
+                    let firstIndex = self.collectionDetails.nftIds.firstIndex(of: first.id) ?? 0
+                    let secondIndex = self.collectionDetails.nftIds.firstIndex(of: second.id) ?? 0
+                    return firstIndex < secondIndex
+                }
                 
-                if nftCellModels.isEmpty {
+                self.nftCollectionCell = sortedModels
+                
+                if sortedModels.isEmpty {
                     self.view?.showEmptyState()
                 } else {
-                    self.view?.displayCollections(nftCellModels)
+                    self.view?.displayCollections(sortedModels)
                 }
                 
             case .failure(let error):
