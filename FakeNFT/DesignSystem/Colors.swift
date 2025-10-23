@@ -41,6 +41,10 @@ extension UIColor {
     static let textSecondary = UIColor.gray
     static let textOnPrimary = UIColor.white
     static let textOnSecondary = UIColor.black
+    static let greenUniversal = UIColor(hexString: "#1C9F00")
+    static let yellowUniversal = UIColor(hexString: "#FEEF0D")
+    static let blueUniversal = UIColor(hexString: "#0A84FF")
+    static let redUniversal = UIColor(hexString: "#F56B6C")
 
     private static let yaBlackLight = UIColor(hexString: "1A1B22")
     private static let yaBlackDark = UIColor.white
@@ -65,9 +69,9 @@ extension UIColor {
         : .yaBlackLight
     }
     
-    static let cartButton = UIColor { traits in
+    static let textActive = UIColor { traits in
         return traits.userInterfaceStyle == .dark
-        ? .yaBlackDark
-        : .yaBlackLight
+        ? yaBlackDark
+        : yaBlackLight
     }
 }
