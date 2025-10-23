@@ -18,10 +18,8 @@ final class TabBarController: UITabBarController {
 
     override func viewDidLoad() {
         super.viewDidLoad()
-
-        let catalogController = TestCatalogViewController(
-            servicesAssembly: servicesAssembly
-        )
+        
+        let catalogController = CatalogViewController()
         catalogController.tabBarItem = catalogTabBarItem
         
         let cartController = CartController(
@@ -33,6 +31,10 @@ final class TabBarController: UITabBarController {
         navigationController.tabBarItem = cartTabBarItem
 
         viewControllers = [catalogController, navigationController]
+            
+        let catalogNC = UINavigationController(rootViewController: catalogController)
+
+        viewControllers = [catalogNC]
 
         view.backgroundColor = .systemBackground
         tabBar.unselectedItemTintColor = .segmentActive
