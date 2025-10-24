@@ -146,7 +146,7 @@ final class CatalogCollectionViewController: UIViewController, CatalogCollection
     }
     
     func showLoading(){
-        ProgressHUD.show()
+        ProgressHUD.animate()
         
         collectionView.isHidden = true
         emptyStateStack.isHidden = true

@@ -83,13 +83,11 @@ final class CatalogCollectionViewPresenter: CatalogCollectionViewPresenterProtoc
         guard let index = nftCollectionCell.firstIndex(where: { $0.id == nftId }) else { return }
         let newLikeState = !nftCollectionCell[index].isFavorite
         
-        // TODO: заменить на вызов сервиса избранного
+        // TODO: заменить на вызов избранного
         if newLikeState {
             // Добавить в избранное
-            // favoriteService.addToFavorites(nftId: nftId)
         } else {
             // Удалить из избранного
-            // favoriteService.removeFromFavorites(nftId: nftId)
         }
         
         nftCollectionCell[index].isFavorite = newLikeState
@@ -110,13 +108,11 @@ final class CatalogCollectionViewPresenter: CatalogCollectionViewPresenterProtoc
         guard let index = nftCollectionCell.firstIndex(where: { $0.id == nftId }) else { return }
         let newCartState = !nftCollectionCell[index].isInCart
         
-        // TODO: заменить на вызов сервиса из корзины
+        // TODO: заменить на вызов из корзины
         if newCartState {
             // Добавить в корзину
-            // cartService.addToCart(nftId: nftId)
         } else {
             // Удалить из корзины
-            // cartService.removeFromCart(nftId: nftId)
         }
         
         nftCollectionCell[index].isInCart = newCartState

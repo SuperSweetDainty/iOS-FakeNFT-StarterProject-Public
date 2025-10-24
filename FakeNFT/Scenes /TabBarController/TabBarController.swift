@@ -1,9 +1,9 @@
 import UIKit
 
 final class TabBarController: UITabBarController {
-
+    
     var servicesAssembly: ServicesAssembly!
-
+    
     private let catalogTabBarItem = UITabBarItem(
         title: NSLocalizedString("Tab.catalog", comment: ""),
         image: UIImage(systemName: "square.stack.3d.up.fill"),
@@ -15,7 +15,7 @@ final class TabBarController: UITabBarController {
         image: UIImage(resource: .basket).withTintColor(.segmentActive),
         tag: 1
     )
-
+    
     override func viewDidLoad() {
         super.viewDidLoad()
         
@@ -26,18 +26,15 @@ final class TabBarController: UITabBarController {
             servicesAssembly: servicesAssembly
         )
         
-        let navigationController = UINavigationController(rootViewController: cartController)
-        navigationController.modalPresentationStyle = .fullScreen
-        navigationController.tabBarItem = cartTabBarItem
-
-        viewControllers = [catalogController, navigationController]
-            
-        let catalogNC = UINavigationController(rootViewController: catalogController)
-
-        viewControllers = [catalogNC]
-
+        let cartNavigationController = UINavigationController(rootViewController: cartController)
+        cartNavigationController.tabBarItem = cartTabBarItem
+        
+        let catalogNavigationController = UINavigationController(rootViewController: catalogController)
+        catalogNavigationController.tabBarItem = catalogTabBarItem
+        
+        viewControllers = [catalogNavigationController, cartNavigationController]
+        
         view.backgroundColor = .systemBackground
         tabBar.unselectedItemTintColor = .segmentActive
-        view.backgroundColor = .systemBackground
     }
 }
