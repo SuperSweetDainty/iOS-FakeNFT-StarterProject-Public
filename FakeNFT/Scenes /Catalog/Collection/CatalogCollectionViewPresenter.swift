@@ -215,7 +215,7 @@ final class CatalogCollectionViewPresenter: CatalogCollectionViewPresenterProtoc
         // Мок-сохранение в UserDefaults
         // TODO: заменить UserDefaults на реальные сервисы
         UserDefaults.standard.set(isInCart, forKey: "nft_cart_\(nftId)")
-        print("NFT \(nftId) like state: \(isInCart ? "cart" : "noCart")")
+        print("NFT \(nftId) cart state: \(isInCart ? "cart" : "noCart")")
     }
     
     private func loadCartState(nftId: String) -> Bool {
