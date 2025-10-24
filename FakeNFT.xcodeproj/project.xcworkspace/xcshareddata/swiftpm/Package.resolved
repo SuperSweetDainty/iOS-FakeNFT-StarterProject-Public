@@ -6,13 +6,8 @@
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/onevcat/Kingfisher.git",
       "state" : {
-<<<<<<< HEAD
         "revision" : "dd3c422ec3088404d6f7e8c905a8318b3de12d6f",
         "version" : "8.6.0"
-=======
-        "revision" : "2ef543ee21d63734e1c004ad6c870255e8716c50",
-        "version" : "7.12.0"
->>>>>>> 70034d3 (Develop, updated the develop branch after the profile merge)
       }
     },
     {
@@ -20,13 +15,8 @@
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/relatedcode/ProgressHUD",
       "state" : {
-<<<<<<< HEAD
         "revision" : "9364904a42cb25f58d026451140c4080a868e72e",
         "version" : "14.1.3"
-=======
-        "revision" : "46792db49f80454879a939f9b2be31bb61c37b0c",
-        "version" : "13.8.6"
->>>>>>> 70034d3 (Develop, updated the develop branch after the profile merge)
       }
     }
   ],
