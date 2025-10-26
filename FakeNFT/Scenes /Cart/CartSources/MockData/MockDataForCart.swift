@@ -25,35 +25,35 @@ class MockDataForCart: PresenterCartProtocol {
             Nft(
                 id: "1e649115-1d4f-4026-ad56-9551a16763ee",
                 name: "Emma",
+                price: 28.82,
                 rating: 1,
                 images: [
                     safeUrl("https://code.s3.yandex.net/Mobile/iOS/NFT/Brown/Emma/1.png").url,
                     safeUrl("https://code.s3.yandex.net/Mobile/iOS/NFT/Brown/Emma/2.png").url,
                     safeUrl("https://code.s3.yandex.net/Mobile/iOS/NFT/Brown/Emma/3.png").url
-                ].compactMap { $0 },
-                price: 28.82
+                ].compactMap { $0 }
             ),
             Nft(
                 id: "7773e33c-ec15-4230-a102-92426a3a6d5a",
                 name: "Beige",
+                price: 49.64,
                 rating: 3,
                 images: [
                     safeUrl("https://code.s3.yandex.net/Mobile/iOS/NFT/Beige/Lark/1.png").url,
                     safeUrl("https://code.s3.yandex.net/Mobile/iOS/NFT/Beige/Lark/2.png").url,
                     safeUrl("https://code.s3.yandex.net/Mobile/iOS/NFT/Beige/Lark/3.png").url
-                ].compactMap { $0 },
-                price: 49.64
+                ].compactMap { $0 }
             ),
             Nft(
                 id: "c14cf3bc-7470-4eec-8a42-5eaa65f4053c",
                 name: "Ellsa",
+                price: 39.37,
                 rating: 5,
                 images: [
                     safeUrl("https://code.s3.yandex.net/Mobile/iOS/NFT/Beige/Ellsa/1.png").url,
                     safeUrl("https://code.s3.yandex.net/Mobile/iOS/NFT/Beige/Ellsa/2.png").url,
                     safeUrl("https://code.s3.yandex.net/Mobile/iOS/NFT/Beige/Ellsa/3.png").url
-                ].compactMap { $0 },
-                price: 39.37
+                ].compactMap { $0 }
             ),
         ]
     }()
