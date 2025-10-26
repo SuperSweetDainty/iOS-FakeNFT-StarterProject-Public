@@ -2,8 +2,6 @@ import UIKit
 
 final class NftImageCollectionViewCell: UICollectionViewCell, ReuseIdentifying {
 
-    // MARK: - Properties
-
     private lazy var scrollView: UIScrollView = {
         let scrollView = UIScrollView()
         scrollView.delegate = self
@@ -17,8 +15,6 @@ final class NftImageCollectionViewCell: UICollectionViewCell, ReuseIdentifying {
         imageView.contentMode = .scaleAspectFit
         return imageView
     }()
-
-    // MARK: - Init
 
     override init(frame: CGRect) {
         super.init(frame: frame)
@@ -36,14 +32,10 @@ final class NftImageCollectionViewCell: UICollectionViewCell, ReuseIdentifying {
         fatalError("init(coder:) has not been implemented")
     }
 
-    // MARK: - Functions
-
     func configure(with cellModel: NftDetailCellModel) {
         imageView.kf.setImage(with: cellModel.url)
     }
 }
-
-// MARK: - UIScrollViewDelegate
 
 extension NftImageCollectionViewCell: UIScrollViewDelegate {
 
