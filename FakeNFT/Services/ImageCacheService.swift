@@ -19,7 +19,9 @@ final class ImageCacheServiceImpl: ImageCacheService {
         self.session = session
         memoryCache.totalCostLimit = 100 * 1024 * 1024 // 100 MB
         memoryCache.countLimit = 100
-        let cacheDirectory = FileManager.default.urls(for: .cachesDirectory, in: .userDomainMask).first!
+        guard let cacheDirectory = FileManager.default.urls(for: .cachesDirectory, in: .userDomainMask).first else {
+            fatalError("Unable to access caches directory")
+        }
         diskCacheURL = cacheDirectory.appendingPathComponent("ImageCache", isDirectory: true)
         try? FileManager.default.createDirectory(at: diskCacheURL, withIntermediateDirectories: true)
     }

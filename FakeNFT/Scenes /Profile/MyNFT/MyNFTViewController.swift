@@ -484,7 +484,9 @@ extension MyNFTViewController: UITableViewDataSource {
     }
     
     func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
-        let cell = tableView.dequeueReusableCell(withIdentifier: "MyNFTCell", for: indexPath) as! MyNFTCell
+        guard let cell = tableView.dequeueReusableCell(withIdentifier: "MyNFTCell", for: indexPath) as? MyNFTCell else {
+            return UITableViewCell()
+        }
         let nft = nfts[indexPath.section]
         let isLiked = likedNFTs.contains(nft.id)
         
