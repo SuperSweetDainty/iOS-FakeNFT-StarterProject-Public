@@ -1,4 +1,1 @@
-import Foundation
-
-public struct ProfileInput {
-}
+../Scenes /Profile/ProfileInput.swift
