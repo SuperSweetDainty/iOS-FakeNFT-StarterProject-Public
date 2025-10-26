@@ -76,7 +76,7 @@ final class CartController: UIViewController, UpdateCartProtocol {
     init(servicesAssembly: ServicesAssembly) {
         self.servicesAssembly = servicesAssembly
         super.init(nibName: nil, bundle: nil)
-        self.presenter = MockDataForCart(view: self, networkService: servicesAssembly.cartNetworkClient)
+        self.presenter = CartPresenter(view: self, networkService: servicesAssembly.cartNetworkClient)
         
     }
     
@@ -88,12 +88,14 @@ final class CartController: UIViewController, UpdateCartProtocol {
     override func viewDidLoad() {
         super.viewDidLoad()
         view.backgroundColor = .systemBackground
-        presenter?.viewDidLoad()
         setupCart()
     }
     
     override func viewWillAppear(_ animated: Bool) {
         super.viewWillAppear(animated)
+        if arrayNfts.isEmpty {
+            pageReload()
+        }
         navigationController?.setNavigationBarHidden(true, animated: animated)
     }
     

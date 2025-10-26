@@ -7,7 +7,7 @@
 
 import Foundation
 
-final class CartPresenter {
+final class CartPresenter: PresenterCartProtocol {
     // MARK: - Properties
     private let requestNetwork: NetworkClient
     weak var view: UpdateCartProtocol?
