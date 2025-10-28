@@ -105,7 +105,16 @@ final class CatalogCollectionViewController: UIViewController, CatalogCollection
     // MARK: - Init
     init(collectionDetails: CatalogCollectionNft) {
         self.collectionDetails = collectionDetails
-        self.presenter = CatalogCollectionViewPresenter(collectionDetails: collectionDetails)
+        let servicesAssembly = ServicesAssembly(
+            networkClient: DefaultNetworkClient(),
+            nftStorage: NftStorageImpl()
+        )
+        
+        self.presenter = CatalogCollectionViewPresenter(
+            collectionDetails: collectionDetails,
+            profileService: servicesAssembly.profileService // Передаем profileService
+        )
+        
         super.init(nibName: nil, bundle: nil)
         self.presenter.view = self
     }

@@ -89,7 +89,8 @@ final class CartCell: UITableViewCell {
     func setupCell(with nft: Nft, delegate: CellCartProtocol) {
         self.delegate = delegate
         id = nft.id
-        nameLabel.text = nft.name
+        let nftDisplayName = extractNFTName(from: nft.images.first?.absoluteString ?? "")
+        nameLabel.text = nftDisplayName.capitalized
         priceLabel.text = "\(nft.price) ETH"
         
         if let firstImageURL = nft.images.first {
@@ -150,6 +151,22 @@ final class CartCell: UITableViewCell {
             deleteButton.trailingAnchor.constraint(equalTo: emptyView.trailingAnchor),
             deleteButton.centerYAnchor.constraint(equalTo: emptyView.centerYAnchor)
         ])
+    }
+    
+    private func extractNFTName(from imageURL: String?) -> String {
+        guard let imageURL = imageURL,
+              let _ = URL(string: imageURL) else { return "NFT" }
+        
+        let components = imageURL.components(separatedBy: "/")
+        
+        if let nftIndex = components.firstIndex(of: "NFT"),
+           nftIndex + 2 < components.count {
+            _ = components[nftIndex + 1]
+            let nftName = components[nftIndex + 2]
+            return nftName.capitalized
+        }
+        
+        return "NFT"
     }
     
     @objc private func didTapDeleteButton() {
