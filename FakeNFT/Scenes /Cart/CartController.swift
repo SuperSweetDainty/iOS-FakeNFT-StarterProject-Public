@@ -63,7 +63,7 @@ final class CartController: UIViewController, UpdateCartProtocol {
         label.textColor = .textActive
         return label
     }()
-
+    
     private var emptyStateLabel: UILabel = {
         let label = UILabel()
         label.text = "Корзина пуста"
@@ -71,12 +71,12 @@ final class CartController: UIViewController, UpdateCartProtocol {
         label.font = .bodyBold
         return label
     }()
-
+    
     // MARK: - init
     init(servicesAssembly: ServicesAssembly) {
         self.servicesAssembly = servicesAssembly
         super.init(nibName: nil, bundle: nil)
-        self.presenter = CartPresenter(view: self, networkService: servicesAssembly.cartNetworkClient)
+        self.presenter = CartPresenter(view: self, networkService: servicesAssembly.cartNetworkClient, cartService: CartService.shared, nftService: servicesAssembly.nftService)
         
     }
     
@@ -93,17 +93,20 @@ final class CartController: UIViewController, UpdateCartProtocol {
     
     override func viewWillAppear(_ animated: Bool) {
         super.viewWillAppear(animated)
-        if arrayNfts.isEmpty {
-            pageReload()
-        }
+        //        if arrayNfts.isEmpty {
+        //            pageReload()
+        //        }
         navigationController?.setNavigationBarHidden(true, animated: animated)
+        
+        // перезагружаем корзину каждый раз, когда экран снова показан
+        (presenter as? CartPresenter)?.reloadCart()
     }
     
     override func viewWillDisappear(_ animated: Bool) {
         super.viewWillDisappear(animated)
         navigationController?.setNavigationBarHidden(false, animated: animated)
     }
-
+    
     // MARK: - Methods
     private func setupCart() {
         view.addSubview(tableView)
@@ -121,7 +124,7 @@ final class CartController: UIViewController, UpdateCartProtocol {
         thePayButton.translatesAutoresizingMaskIntoConstraints = false
         thePayView.translatesAutoresizingMaskIntoConstraints = false
         emptyStateLabel.translatesAutoresizingMaskIntoConstraints = false
-
+        
         NSLayoutConstraint.activate([
             sortButton.topAnchor.constraint(equalTo: view.safeAreaLayoutGuide.topAnchor, constant: 2),
             sortButton.trailingAnchor.constraint(equalTo: view.trailingAnchor, constant: -9),
@@ -149,7 +152,7 @@ final class CartController: UIViewController, UpdateCartProtocol {
             thePayButton.trailingAnchor.constraint(equalTo: thePayView.trailingAnchor, constant: -16),
             thePayButton.centerYAnchor.constraint(equalTo: thePayView.centerYAnchor),
             thePayButton.widthAnchor.constraint(equalToConstant: 240),
-
+            
             emptyStateLabel.centerXAnchor.constraint(equalTo: view.centerXAnchor),
             emptyStateLabel.centerYAnchor.constraint(equalTo: view.centerYAnchor)
         ])
@@ -222,7 +225,7 @@ final class CartController: UIViewController, UpdateCartProtocol {
     private func goBack() {
         navigationController?.popViewController(animated: true)
     }
-
+    
 }
 
 // MARK: - UITableViewDataSource
@@ -255,6 +258,7 @@ extension CartController: CellCartProtocol {
         deleteVC.modalPresentationStyle = .overFullScreen
         deleteVC.modalTransitionStyle = .crossDissolve
         deleteVC.onDelete = { [weak self] in
+            CartService.shared.removeFromCart(nftId: id)
             self?.arrayNfts.removeAll { $0.id == id }
             self?.pageReload()
         }

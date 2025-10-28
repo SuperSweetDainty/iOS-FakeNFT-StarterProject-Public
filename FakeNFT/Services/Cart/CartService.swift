@@ -11,6 +11,8 @@ protocol CartServiceProtocol: AnyObject {
     func addToCart(nftId: String)
     func removeFromCart(nftId: String)
     func isInCart(nftId: String) -> Bool
+    func getCartItems() -> [String]
+    func clearCart()
 }
 
 final class CartService: CartServiceProtocol {
@@ -33,6 +35,14 @@ final class CartService: CartServiceProtocol {
     }
     
     func isInCart(nftId: String) -> Bool {
-        return cartItems.contains(nftId)
+        cartItems.contains(nftId)
+    }
+    
+    func getCartItems() -> [String] {
+        Array(cartItems)
+    }
+    
+    func clearCart() {
+        cartItems = []
     }
 }

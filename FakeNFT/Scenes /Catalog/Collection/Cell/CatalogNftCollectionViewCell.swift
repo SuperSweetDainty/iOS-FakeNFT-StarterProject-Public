@@ -105,7 +105,8 @@ final class CatalogNftCollectionViewCell: UICollectionViewCell {
     // MARK: - Public Methods
     func configure(with nft: NftCellModel) {
         self.nft = nft
-        let capitalizedDescription = nft.name.prefix(1).uppercased() + nft.name.dropFirst()
+        let nftName = extractNFTName(from: nft.images)
+        let capitalizedDescription = nftName.prefix(1).uppercased() + nftName.dropFirst()
         nameNftLabel.text = capitalizedDescription
         priceNftLabel.text = "\(nft.price) ETH"
         
@@ -205,5 +206,21 @@ final class CatalogNftCollectionViewCell: UICollectionViewCell {
     
     private func clearRating() {
         ratingStackView.arrangedSubviews.forEach { $0.removeFromSuperview() }
+    }
+    
+    private func extractNFTName(from imageURL: String?) -> String {
+        guard let imageURL = imageURL,
+              let _ = URL(string: imageURL) else { return "NFT" }
+        
+        let components = imageURL.components(separatedBy: "/")
+        
+        if let nftIndex = components.firstIndex(of: "NFT"),
+           nftIndex + 2 < components.count {
+            _ = components[nftIndex + 1]
+            let nftName = components[nftIndex + 2]
+            return nftName.capitalized
+        }
+        
+        return "NFT"
     }
 }

@@ -29,13 +29,15 @@ final class CatalogCollectionViewPresenter: CatalogCollectionViewPresenterProtoc
     private var collectionDetails: CatalogCollectionNft
     private var nftCollectionCell: [NftCellModel] = []
     private let networkService: NetworkServiceProtocol
+    private let cartService: CartServiceProtocol
     private var isLoading = false
     
     // MARK: -Init
     init(collectionDetails: CatalogCollectionNft,
-         networkService: NetworkServiceProtocol = NetworkService()) {
+         networkService: NetworkServiceProtocol = NetworkService(), cartService: CartServiceProtocol = CartService.shared) {
         self.collectionDetails = collectionDetails
         self.networkService = networkService
+        self.cartService = cartService
         setupObservers()
     }
     
@@ -106,18 +108,17 @@ final class CatalogCollectionViewPresenter: CatalogCollectionViewPresenterProtoc
     
     func didTapCart(for nftId: String) {
         guard let index = nftCollectionCell.firstIndex(where: { $0.id == nftId }) else { return }
+        
         let newCartState = !nftCollectionCell[index].isInCart
         
-        // TODO: заменить на вызов из корзины
         if newCartState {
-            // Добавить в корзину
+            cartService.addToCart(nftId: nftId)
         } else {
-            // Удалить из корзины
+            cartService.removeFromCart(nftId: nftId)
         }
         
         nftCollectionCell[index].isInCart = newCartState
         
-        saveCartState(nftId: nftId, isInCart: newCartState)
         view?.updateNFTCartState(at: index, isInCart: newCartState)
         
         print("Cart tapped for NFT: \(nftId), new state: \(newCartState ? "in cart" : "not in cart")")
@@ -174,7 +175,7 @@ final class CatalogCollectionViewPresenter: CatalogCollectionViewPresenterProtoc
                         rating: networkNFT.rating,
                         price: networkNFT.price,
                         isFavorite: self.loadLikeState(nftId: networkNFT.id), // TODO: заменить на реальные сервисы
-                        isInCart: self.loadCartState(nftId: networkNFT.id) // TODO: заменить на реальные сервисы
+                        isInCart: self.cartService.isInCart(nftId: networkNFT.id)
                     )
                 }
                 
