@@ -240,25 +240,29 @@ final class CatalogCollectionViewPresenter: CatalogCollectionViewPresenterProtoc
             return true
         }
         
-        nftService.loadNftList(ids: uniqueIds) { [weak self] result in
+        // ВОЗВРАЩАЕМ СТАРЫЙ РАБОЧИЙ МЕТОД
+        networkService.fetchNFTs(by: uniqueIds) { [weak self] result in
             guard let self else { return }
             self.isLoading = false
             self.view?.hideLoading()
             
             switch result {
-            case .success(let nfts):
-                
-                let nftCellModels = nfts.map { nft in
-                    NftCellModel(
-                        id: nft.id,
-                        name: nft.name,
-                        images: nft.images.first?.absoluteString ?? "",
-                        rating: nft.rating,
-                        price: nft.price,
-                        isFavorite: self.loadLikeState(nftId: nft.id),
-                        isInCart: self.loadCartState(nftId: nft.id)
+            case .success(let networkNFTs):
+                // Ensure unique models by id (in case backend returns duplicates)
+                var byId: [String: NftCellModel] = [:]
+                for networkNFT in networkNFTs {
+                    let model = NftCellModel(
+                        id: networkNFT.id,
+                        name: networkNFT.name,
+                        images: networkNFT.images.first ?? "",
+                        rating: networkNFT.rating,
+                        price: networkNFT.price,
+                        isFavorite: self.loadLikeState(nftId: networkNFT.id),
+                        isInCart: self.loadCartState(nftId: networkNFT.id)
                     )
+                    byId[networkNFT.id] = model
                 }
+                let nftCellModels: [NftCellModel] = Array(byId.values)
                 
                 let sortedModels = nftCellModels.sorted { first, second in
                     let firstIndex = uniqueIds.firstIndex(of: first.id) ?? 0
@@ -275,7 +279,6 @@ final class CatalogCollectionViewPresenter: CatalogCollectionViewPresenterProtoc
                 }
                 
             case .failure(let error):
-                print("Catalog: Failed to load NFTs: \(error)")
                 self.view?.showError("Ошибка загрузки NFT: \(error.localizedDescription)")
             }
         }
