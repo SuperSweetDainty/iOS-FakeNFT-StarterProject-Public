@@ -1,1 +1,0 @@
-../Scenes /Profile/FavoritesNFT/FavoritesNFTViewController.swift
