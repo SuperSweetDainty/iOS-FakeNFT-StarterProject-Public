@@ -32,6 +32,12 @@ final class CartService: CartServiceProtocol {
     func removeFromCart(nftId: String) {
         cartItems.remove(nftId)
         print("Removed from cart: \(nftId)")
+        
+        NotificationCenter.default.post(
+            name: .nftCartStateChanged,
+            object: nil,
+            userInfo: ["nftId": nftId, "isInCart": false]
+        )
     }
     
     func isInCart(nftId: String) -> Bool {

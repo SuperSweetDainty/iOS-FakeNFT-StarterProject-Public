@@ -71,11 +71,12 @@ final class CatalogCollectionViewPresenter: CatalogCollectionViewPresenterProtoc
     @objc private func handleCartUpdate(_ notification: Notification) {
         guard let userInfo = notification.userInfo,
               let nftId = userInfo["nftId"] as? String,
-              let isInCart = userInfo["isInCart"] as? Bool,
-              let index = nftCollectionCell.firstIndex(where: { $0.id == nftId }) else { return }
+              let isInCart = userInfo["isInCart"] as? Bool else { return }
         
         // Обновляем данные
-        nftCollectionCell[index].isInCart = isInCart
+        if let index = nftCollectionCell.firstIndex(where: { $0.id == nftId }) {
+            nftCollectionCell[index].isInCart = isInCart
+        }
         
         DispatchQueue.main.async {
             self.view?.displayCollections(self.nftCollectionCell)
@@ -222,7 +223,6 @@ final class CatalogCollectionViewPresenter: CatalogCollectionViewPresenterProtoc
             return true
         }
         
-        // ИСПОЛЬЗУЕМ ТОТ ЖЕ СЕРВИС, ЧТО И В ПРОФИЛЕ
         nftService.loadNftList(ids: uniqueIds) { [weak self] result in
             guard let self else { return }
             self.isLoading = false
