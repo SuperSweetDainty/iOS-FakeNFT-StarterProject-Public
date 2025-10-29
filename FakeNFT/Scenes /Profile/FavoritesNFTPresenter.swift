@@ -71,6 +71,14 @@ final class FavoritesNFTPresenterImpl: FavoritesNFTPresenter {
     
     init(servicesAssembly: ServicesAssembly) {
         self.servicesAssembly = servicesAssembly
+        
+        // Observe unified like-state changes from other screens
+        NotificationCenter.default.addObserver(
+            self,
+            selector: #selector(handleExternalLikeChange(_:)),
+            name: .nftLikeStateChanged,
+            object: nil
+        )
     }
     
     // MARK: - Functions
@@ -102,6 +110,16 @@ final class FavoritesNFTPresenterImpl: FavoritesNFTPresenter {
         } else {
             view?.displayNFTs(favoriteNFTs, likedNFTs: likedNFTs)
         }
+        
+        // Broadcast unified like-state change for sync across screens
+        NotificationCenter.default.post(
+            name: .nftLikeStateChanged,
+            object: nil,
+            userInfo: [
+                "nftId": nftId,
+                "isLiked": isLiked
+            ]
+        )
         
         // Sync with server
         servicesAssembly.profileService.updateLikes(Array(likedNFTs)) { [weak self] result in
@@ -239,6 +257,50 @@ final class FavoritesNFTPresenterImpl: FavoritesNFTPresenter {
     
     private func postLikedNFTsNotification() {
         NotificationCenter.default.post(name: .likedNFTsDidChange, object: nil)
+    }
+    
+    @objc private func handleExternalLikeChange(_ notification: Notification) {
+        guard
+            let userInfo = notification.userInfo,
+            let nftId = userInfo["nftId"] as? String,
+            let isLiked = userInfo["isLiked"] as? Bool
+        else { return }
+        
+        // Update local liked set
+        if isLiked {
+            likedNFTs.insert(nftId)
+        } else {
+            likedNFTs.remove(nftId)
+        }
+        saveLikedNFTs()
+        
+        // If liked added and not present in cache, fetch its details and append
+        if isLiked {
+            let alreadyLoaded = allNFTs.contains(where: { $0.id == nftId })
+            if !alreadyLoaded {
+                servicesAssembly.nftService.loadNftList(ids: [nftId]) { [weak self] result in
+                    guard let self = self else { return }
+                    DispatchQueue.main.async {
+                        switch result {
+                        case .success(let nfts):
+                            // Merge newly loaded NFT(s)
+                            self.allNFTs.append(contentsOf: nfts)
+                            self.updateFavoriteNFTs()
+                            self.displayCurrentState()
+                        case .failure:
+                            // If fail, still update list (item will appear after next load)
+                            self.updateFavoriteNFTs()
+                            self.displayCurrentState()
+                        }
+                    }
+                }
+                return
+            }
+        }
+        
+        // For removal or when already cached, just refilter and update
+        updateFavoriteNFTs()
+        displayCurrentState()
     }
 }
 

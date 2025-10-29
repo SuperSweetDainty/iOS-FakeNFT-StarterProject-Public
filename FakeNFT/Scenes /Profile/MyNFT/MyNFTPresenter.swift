@@ -111,6 +111,16 @@ final class MyNFTPresenterImpl: MyNFTPresenter {
         // Update UI optimistically
         view?.displayNFTs(nfts, likedNFTs: likedNFTs)
         
+        // Broadcast unified like-state change for sync across screens
+        NotificationCenter.default.post(
+            name: .nftLikeStateChanged,
+            object: nil,
+            userInfo: [
+                "nftId": nftId,
+                "isLiked": isLiked
+            ]
+        )
+        
         // Sync with server
         servicesAssembly.profileService.updateLikes(Array(likedNFTs)) { [weak self] result in
             switch result {

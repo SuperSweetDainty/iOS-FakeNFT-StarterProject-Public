@@ -184,85 +184,69 @@ final class CatalogCollectionViewPresenter: CatalogCollectionViewPresenterProtoc
         
         view?.showLoading()
         
+        // Deduplicate ids while preserving original order
         let nftIds = collectionDetails.nftIds
+        var seenIds = Set<String>()
+        let uniqueIds = nftIds.filter { id in
+            if seenIds.contains(id) { return false }
+            seenIds.insert(id)
+            return true
+        }
         
-        // Сначала загружаем профиль пользователя чтобы получить лайки
-        profileService.loadProfile { [weak self] result in
+        networkService.fetchNFTs(by: uniqueIds) { [weak self] result in
             guard let self else { return }
+            self.isLoading = false
+            self.view?.hideLoading()
             
             switch result {
-            case .success(let user):
-                let userLikes = user.likes // Получаем лайки пользователя
+            case .success(let networkNFTs):
+                // Ensure unique models by id (in case backend returns duplicates)
+                var byId: [String: NftCellModel] = [:]
+                for networkNFT in networkNFTs {
+                    let model = NftCellModel(
+                        id: networkNFT.id,
+                        name: networkNFT.name,
+                        images: networkNFT.images.first ?? "",
+                        rating: networkNFT.rating,
+                        price: networkNFT.price,
+                        isFavorite: self.loadLikeState(nftId: networkNFT.id), // TODO: заменить на реальные сервисы
+                        isInCart: self.loadCartState(nftId: networkNFT.id) // TODO: заменить на реальные сервисы
+                    )
+                    byId[networkNFT.id] = model
+                }
+                let nftCellModels: [NftCellModel] = Array(byId.values)
                 
-                // Затем загружаем NFT
-                self.networkService.fetchNFTs(by: nftIds) { result in
-                    self.isLoading = false
-                    self.view?.hideLoading()
-                    
-                    switch result {
-                    case .success(let networkNFTs):
-                        let nftCellModels = networkNFTs.map { networkNFT in
-                            NftCellModel(
-                                id: networkNFT.id,
-                                name: networkNFT.name,
-                                images: networkNFT.images.first ?? "",
-                                rating: networkNFT.rating,
-                                price: networkNFT.price,
-                                isFavorite: userLikes.contains(networkNFT.id),
-                                isInCart: self.cartService.isInCart(nftId: networkNFT.id)
-                            )
-                        }
-                        
-                        let sortedModels = nftCellModels.sorted { first, second in
-                            let firstIndex = self.collectionDetails.nftIds.firstIndex(of: first.id) ?? 0
-                            let secondIndex = self.collectionDetails.nftIds.firstIndex(of: second.id) ?? 0
-                            return firstIndex < secondIndex
-                        }
-                        
-                        self.nftCollectionCell = sortedModels
-                        
-                        if sortedModels.isEmpty {
-                            self.view?.showEmptyState()
-                        } else {
-                            self.view?.displayCollections(sortedModels)
-                        }
-                        
-                    case .failure(let error):
-                        self.view?.showError("Ошибка загрузки NFT: \(error.localizedDescription)")
-                    }
+                let sortedModels = nftCellModels.sorted { first, second in
+                    let firstIndex = uniqueIds.firstIndex(of: first.id) ?? 0
+                    let secondIndex = uniqueIds.firstIndex(of: second.id) ?? 0
+                    return firstIndex < secondIndex
+                }
+                
+                self.nftCollectionCell = sortedModels
+                
+                if sortedModels.isEmpty {
+                    self.view?.showEmptyState()
+                } else {
+                    self.view?.displayCollections(sortedModels)
                 }
                 
             case .failure(let error):
-                self.isLoading = false
-                self.view?.hideLoading()
-                self.view?.showError("Ошибка загрузки профиля: \(error.localizedDescription)")
+                self.view?.showError("Ошибка загрузки NFT: \(error.localizedDescription)")
             }
         }
     }
-    //        private func saveLikeState(nftId: String, isLiked: Bool) {
-    //            // Мок-сохранение в UserDefaults
-    //            // TODO: заменить UserDefaults на реальные сервисы
-    //            UserDefaults.standard.set(isLiked, forKey: "nft_like_\(nftId)")
-    //            print("NFT \(nftId) like state: \(isLiked ? "liked" : "unliked")")
-    //
-    //        }
-    //
-    //        private func loadLikeState(nftId: String) -> Bool {
-    //            // TODO: заменить UserDefaults на реальные сервисы
-    //            UserDefaults.standard.bool(forKey: "nft_like_\(nftId)")
-    //        }
-    //
-    //        private func saveCartState(nftId: String, isInCart: Bool) {
-    //            // Мок-сохранение в UserDefaults
-    //            // TODO: заменить UserDefaults на реальные сервисы
-    //            UserDefaults.standard.set(isInCart, forKey: "nft_cart_\(nftId)")
-    //            print("NFT \(nftId) cart state: \(isInCart ? "cart" : "noCart")")
-    //        }
     
-    //        private func loadCartState(nftId: String) -> Bool {
-    //            // TODO: заменить UserDefaults на реальные сервисы
-    //            return UserDefaults.standard.bool(forKey: "nft_cart_\(nftId)")
-    //        }
+    private func loadLikeState(nftId: String) -> Bool {
+        if let likedData = UserDefaults.standard.data(forKey: "LikedNFTs"),
+           let likedSet = try? JSONDecoder().decode(Set<String>.self, from: likedData) {
+            return likedSet.contains(nftId)
+        }
+        return false
+    }
+    
+    private func loadCartState(nftId: String) -> Bool {
+        return cartService.isInCart(nftId: nftId)
+    }
 }
 
 //    // MARK: - Mock

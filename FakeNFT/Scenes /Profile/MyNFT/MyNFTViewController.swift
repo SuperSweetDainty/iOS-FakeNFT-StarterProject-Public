@@ -406,6 +406,14 @@ final class MyNFTViewController: UIViewController {
             name: .likedNFTsDidChange,
             object: nil
         )
+        
+        // Observe unified like-state changes from other screens
+        NotificationCenter.default.addObserver(
+            self,
+            selector: #selector(likedNFTsDidChange),
+            name: .nftLikeStateChanged,
+            object: nil
+        )
     }
     
     // MARK: - Actions
