@@ -31,17 +31,20 @@ final class CatalogCollectionViewPresenter: CatalogCollectionViewPresenterProtoc
     private let networkService: NetworkServiceProtocol
     private let cartService: CartServiceProtocol
     private let profileService: ProfileService
+    private let nftService: NftService
     private var isLoading = false
     
     // MARK: -Init
     init(collectionDetails: CatalogCollectionNft,
          networkService: NetworkServiceProtocol = NetworkService(),
          cartService: CartServiceProtocol = CartService.shared,
-         profileService: ProfileService) {
+         profileService: ProfileService,
+         nftService: NftService) {
         self.collectionDetails = collectionDetails
         self.networkService = networkService
         self.cartService = cartService
         self.profileService = profileService
+        self.nftService = nftService
         setupObservers()
     }
     
@@ -80,16 +83,16 @@ final class CatalogCollectionViewPresenter: CatalogCollectionViewPresenterProtoc
     }
     
     @objc private func handleCartClear(_ notification: Notification) {
-            for index in nftCollectionCell.indices {
-                nftCollectionCell[index].isInCart = false
-            }
-            
-            DispatchQueue.main.async {
-                self.view?.displayCollections(self.nftCollectionCell)
-            }
-            
-            print("Cart cleared - all NFT cart icons updated to off")
+        for index in nftCollectionCell.indices {
+            nftCollectionCell[index].isInCart = false
         }
+        
+        DispatchQueue.main.async {
+            self.view?.displayCollections(self.nftCollectionCell)
+        }
+        
+        print("Cart cleared - all NFT cart icons updated to off")
+    }
     
     
     // MARK: - Public Methods
@@ -104,20 +107,41 @@ final class CatalogCollectionViewPresenter: CatalogCollectionViewPresenterProtoc
         nftCollectionCell[index].isFavorite = newLikeState
         view?.updateNFTLikeState(at: index, isLiked: newLikeState)
         
-        profileService.updateLikes([nftId]) { [weak self] result in
+        profileService.loadProfile { [weak self] result in
             DispatchQueue.main.async {
                 switch result {
                 case .success(let user):
-                    print("Like updated for NFT: \(nftId), new state: \(newLikeState ? "liked" : "unliked")")
+                    var updatedLikes = Set(user.likes)
                     
-                    NotificationCenter.default.post(
-                        name: .nftLikeStateChanged,
-                        object: nil,
-                        userInfo: ["nftId": nftId, "isLiked": newLikeState]
-                    )
+                    if newLikeState {
+                        updatedLikes.insert(nftId)
+                    } else {
+                        updatedLikes.remove(nftId)
+                    }
+                    
+                    self?.saveLikesToUserDefaults(Array(updatedLikes))
+                    
+                    self?.profileService.updateLikes(Array(updatedLikes)) { result in
+                        DispatchQueue.main.async {
+                            switch result {
+                            case .success(let updatedUser):
+                                
+                                NotificationCenter.default.post(
+                                    name: .nftLikeStateChanged,
+                                    object: nil,
+                                    userInfo: ["nftId": nftId, "isLiked": newLikeState]
+                                )
+                                
+                            case .failure(let error):
+                                print(" Failed to update likes: \(error)")
+                                self?.nftCollectionCell[index].isFavorite = !newLikeState
+                                self?.view?.updateNFTLikeState(at: index, isLiked: !newLikeState)
+                            }
+                        }
+                    }
                     
                 case .failure(let error):
-                    print("Failed to update like for NFT \(nftId): \(error)")
+                    print("Failed to load profile: \(error)")
                     self?.nftCollectionCell[index].isFavorite = !newLikeState
                     self?.view?.updateNFTLikeState(at: index, isLiked: !newLikeState)
                 }
@@ -178,13 +202,18 @@ final class CatalogCollectionViewPresenter: CatalogCollectionViewPresenterProtoc
         )
     }
     
+    private func saveLikesToUserDefaults(_ likes: [String]) {
+        if let likedData = try? JSONEncoder().encode(Set(likes)) {
+            UserDefaults.standard.set(likedData, forKey: "LikedNFTs")
+        }
+    }
+    
     private func loadNFTs(){
         guard !isLoading else { return }
         isLoading = true
         
         view?.showLoading()
         
-        // Deduplicate ids while preserving original order
         let nftIds = collectionDetails.nftIds
         var seenIds = Set<String>()
         let uniqueIds = nftIds.filter { id in
@@ -193,28 +222,26 @@ final class CatalogCollectionViewPresenter: CatalogCollectionViewPresenterProtoc
             return true
         }
         
-        networkService.fetchNFTs(by: uniqueIds) { [weak self] result in
+        // ИСПОЛЬЗУЕМ ТОТ ЖЕ СЕРВИС, ЧТО И В ПРОФИЛЕ
+        nftService.loadNftList(ids: uniqueIds) { [weak self] result in
             guard let self else { return }
             self.isLoading = false
             self.view?.hideLoading()
             
             switch result {
-            case .success(let networkNFTs):
-                // Ensure unique models by id (in case backend returns duplicates)
-                var byId: [String: NftCellModel] = [:]
-                for networkNFT in networkNFTs {
-                    let model = NftCellModel(
-                        id: networkNFT.id,
-                        name: networkNFT.name,
-                        images: networkNFT.images.first ?? "",
-                        rating: networkNFT.rating,
-                        price: networkNFT.price,
-                        isFavorite: self.loadLikeState(nftId: networkNFT.id), // TODO: заменить на реальные сервисы
-                        isInCart: self.loadCartState(nftId: networkNFT.id) // TODO: заменить на реальные сервисы
+            case .success(let nfts):
+                
+                let nftCellModels = nfts.map { nft in
+                    NftCellModel(
+                        id: nft.id,
+                        name: nft.name,
+                        images: nft.images.first?.absoluteString ?? "",
+                        rating: nft.rating,
+                        price: nft.price,
+                        isFavorite: self.loadLikeState(nftId: nft.id),
+                        isInCart: self.loadCartState(nftId: nft.id)
                     )
-                    byId[networkNFT.id] = model
                 }
-                let nftCellModels: [NftCellModel] = Array(byId.values)
                 
                 let sortedModels = nftCellModels.sorted { first, second in
                     let firstIndex = uniqueIds.firstIndex(of: first.id) ?? 0
@@ -231,6 +258,7 @@ final class CatalogCollectionViewPresenter: CatalogCollectionViewPresenterProtoc
                 }
                 
             case .failure(let error):
+                print("Catalog: Failed to load NFTs: \(error)")
                 self.view?.showError("Ошибка загрузки NFT: \(error.localizedDescription)")
             }
         }
