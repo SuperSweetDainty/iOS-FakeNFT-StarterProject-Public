@@ -31,20 +31,17 @@ final class CatalogCollectionViewPresenter: CatalogCollectionViewPresenterProtoc
     private let networkService: NetworkServiceProtocol
     private let cartService: CartServiceProtocol
     private let profileService: ProfileService
-    private let nftService: NftService
     private var isLoading = false
     
     // MARK: -Init
     init(collectionDetails: CatalogCollectionNft,
          networkService: NetworkServiceProtocol = NetworkService(),
          cartService: CartServiceProtocol = CartService.shared,
-         profileService: ProfileService,
-         nftService: NftService) {
+         profileService: ProfileService) {
         self.collectionDetails = collectionDetails
         self.networkService = networkService
         self.cartService = cartService
         self.profileService = profileService
-        self.nftService = nftService
         setupObservers()
     }
     

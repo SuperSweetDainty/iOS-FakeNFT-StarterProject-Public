@@ -124,8 +124,7 @@ final class CatalogCollectionViewController: UIViewController, CatalogCollection
         
         self.presenter = CatalogCollectionViewPresenter(
             collectionDetails: collectionDetails,
-            profileService: servicesAssembly.profileService,
-            nftService: servicesAssembly.nftService
+            profileService: servicesAssembly.profileService
         )
         
         super.init(nibName: nil, bundle: nil)
