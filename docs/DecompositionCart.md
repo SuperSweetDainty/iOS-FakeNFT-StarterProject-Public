@@ -6,6 +6,8 @@
 
 Эпик: Корзина
 
+Ссылка на видео: https://disk.yandex.ru/i/o6Fblek2aXrJxg
+
 Ссылка на доску: https://github.com/users/SuperSweetDainty/projects/2
 
 Верстка кодом, архитектура MVP.
