@@ -102,6 +102,18 @@ final class CatalogCollectionViewController: UIViewController, CatalogCollection
         return stackView
     }()
     
+    private lazy var backButton: UIButton = {
+        let button = UIButton()
+        button.tintColor = .black
+        button.setImage(UIImage(named: "nav_back_button"), for: .normal)
+        button.addTarget(self,
+                             action: #selector(backButtonTapped),
+                             for: .touchUpInside)
+        button.translatesAutoresizingMaskIntoConstraints = false
+        return button
+        
+    }()
+    
     // MARK: - Init
     init(collectionDetails: CatalogCollectionNft) {
         self.collectionDetails = collectionDetails
@@ -146,6 +158,10 @@ final class CatalogCollectionViewController: UIViewController, CatalogCollection
     //MARK: - IB Actions
     @objc private func retryButtonTapped() {
         presenter.didTapRetry()
+    }
+    
+    @objc private func backButtonTapped() {
+        navigationController?.popViewController(animated: true)
     }
     
     //MARK: - Public Methods
@@ -206,11 +222,12 @@ final class CatalogCollectionViewController: UIViewController, CatalogCollection
     }
     
     private func addSubviews() {
-        [collectionView, emptyStateStack].forEach { view.addSubview($0) }
+        [collectionView, emptyStateStack, backButton].forEach { view.addSubview($0) }
     }
     
     private func setupConstraints() {
         NSLayoutConstraint.activate([
+            //CollectionView
             collectionView.topAnchor.constraint(equalTo: view.topAnchor),
             collectionView.leadingAnchor.constraint(equalTo: view.leadingAnchor),
             collectionView.trailingAnchor.constraint(equalTo: view.trailingAnchor),
@@ -222,7 +239,13 @@ final class CatalogCollectionViewController: UIViewController, CatalogCollection
             
             // Empty State Stack
             emptyStateStack.centerXAnchor.constraint(equalTo: view.centerXAnchor),
-            emptyStateStack.centerYAnchor.constraint(equalTo: view.centerYAnchor)
+            emptyStateStack.centerYAnchor.constraint(equalTo: view.centerYAnchor),
+            
+            // Back Button
+            backButton.widthAnchor.constraint(equalToConstant: 24),
+            backButton.heightAnchor.constraint(equalToConstant: 24),
+            backButton.leadingAnchor.constraint(equalTo: view.leadingAnchor, constant: 9),
+            backButton.topAnchor.constraint(equalTo: view.safeAreaLayoutGuide.topAnchor, constant: 9)
         ])
     }
     
@@ -350,4 +373,5 @@ extension CatalogCollectionViewController: UIGestureRecognizerDelegate {
 extension Notification.Name {
     static let nftLikeStateChanged = Notification.Name("NFTLikeStateChanged")
     static let nftCartStateChanged = Notification.Name("NFTCartStateChanged")
+    static let nftCartCleared = Notification.Name("CartShouldBeCleared")
 }

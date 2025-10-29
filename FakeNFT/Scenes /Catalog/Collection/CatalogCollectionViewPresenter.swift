@@ -79,6 +79,18 @@ final class CatalogCollectionViewPresenter: CatalogCollectionViewPresenterProtoc
         }
     }
     
+    @objc private func handleCartClear(_ notification: Notification) {
+            for index in nftCollectionCell.indices {
+                nftCollectionCell[index].isInCart = false
+            }
+            
+            DispatchQueue.main.async {
+                self.view?.displayCollections(self.nftCollectionCell)
+            }
+            
+            print("Cart cleared - all NFT cart icons updated to off")
+        }
+    
     
     // MARK: - Public Methods
     func collection(at index: Int) -> NftCellModel {
@@ -155,6 +167,13 @@ final class CatalogCollectionViewPresenter: CatalogCollectionViewPresenterProtoc
             self,
             selector: #selector(handleCartUpdate(_:)),
             name: .nftCartStateChanged,
+            object: nil
+        )
+        
+        NotificationCenter.default.addObserver(
+            self,
+            selector: #selector(handleCartClear(_:)),
+            name: .nftCartCleared,
             object: nil
         )
     }

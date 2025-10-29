@@ -44,5 +44,11 @@ final class CartService: CartServiceProtocol {
     
     func clearCart() {
         cartItems = []
+        
+        NotificationCenter.default.post(
+            name: .nftCartCleared,
+            object: nil
+        )
+        print("Cart cleared and notification sent")
     }
 }
