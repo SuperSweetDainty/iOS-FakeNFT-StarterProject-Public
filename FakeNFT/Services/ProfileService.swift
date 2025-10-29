@@ -75,14 +75,26 @@ final class ProfileServiceImpl: ProfileService {
             likes: likes
         )
         
+        print("🔄 Updating likes: \(likes)")
+        
         let request = UpdateProfileRequest(profileId: "1", profileDto: dto)
         
         networkClient.send(request: request, type: User.self) { [weak self] result in
             switch result {
             case .success(let user):
+                print("✅ Likes updated successfully. New likes: \(user.likes)")
+                print("   Server returned \(user.likes.count) likes, we sent \(likes.count)")
+                
+                // Проверяем, что сервер вернул правильные данные
+                let missingLikes = Set(likes).subtracting(user.likes)
+                if !missingLikes.isEmpty {
+                    print("⚠️ Warning: Some likes were not saved by server: \(missingLikes)")
+                }
+                
                 self?.storage.saveProfile(user)
                 completion(.success(user))
             case .failure(let error):
+                print("❌ Failed to update likes: \(error)")
                 completion(.failure(error))
             }
         }

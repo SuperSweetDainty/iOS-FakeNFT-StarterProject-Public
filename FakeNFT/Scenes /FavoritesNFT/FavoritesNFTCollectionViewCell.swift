@@ -198,18 +198,8 @@ final class FavoritesNFTCollectionViewCell: UICollectionViewCell, ReuseIdentifyi
     }
     
     private func placeholderImage(for nftName: String) -> UIImage {
-        switch nftName {
-        case "Lilo": return UIImage(resource: .lilo)
-        case "Spring": return UIImage(resource: .spring)
-        case "April": return UIImage(resource: .april)
-        case "Pixi": return UIImage(resource: .pixi)
-        case "Melissa": return UIImage(resource: .melissa)
-        case "Daisy": return UIImage(resource: .daisy)
-        case "Archie": return UIImage(resource: .archie)
-        case "Piper": return UIImage(resource: .lilo)  // Fallback для Piper
-        case "Mowgli": return UIImage(resource: .spring)  // Fallback для Mowgli
-        default: return UIImage(resource: .lilo)
-        }
+        // Всегда используем единую заглушку загрузки NFTLoading
+        return UIImage(resource: .nftLoading)
     }
     
     private func setupRatingStars(rating: Int) {

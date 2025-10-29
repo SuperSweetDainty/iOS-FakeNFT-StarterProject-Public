@@ -64,22 +64,37 @@ struct DefaultNetworkClient: NetworkClient {
 
         let task = session.dataTask(with: urlRequest) { data, response, error in
             guard let response = response as? HTTPURLResponse else {
+                print("❌ NetworkClient: No HTTP response received")
+                if let error = error {
+                    print("   Error: \(error)")
+                }
                 onResponse(.failure(NetworkClientError.urlSessionError))
                 return
             }
 
+            print("📥 NetworkClient: Received response:")
+            print("   Status code: \(response.statusCode)")
+
             guard 200 ..< 300 ~= response.statusCode else {
+                print("❌ NetworkClient: HTTP error \(response.statusCode)")
                 onResponse(.failure(NetworkClientError.httpStatusCode(response.statusCode)))
                 return
+            }
+
+            if let data = data, let dataString = String(data: data, encoding: .utf8) {
+                print("✅ NetworkClient: Success response:")
+                print("   Data: \(dataString)")
             }
 
             if let data = data {
                 onResponse(.success(data))
                 return
             } else if let error = error {
+                print("❌ NetworkClient: Request error: \(error)")
                 onResponse(.failure(NetworkClientError.urlRequestError(error)))
                 return
             } else {
+                print("❌ NetworkClient: Unknown error")
                 onResponse(.failure(NetworkClientError.urlSessionError))
                 return
             }
@@ -119,6 +134,11 @@ struct DefaultNetworkClient: NetworkClient {
         urlRequest.addValue(RequestConstants.token, forHTTPHeaderField: "X-Practicum-Mobile-Token")
 
         if let dtoDictionary = request.dto?.asDictionary() {
+            print("📤 NetworkClient: Sending request with body:")
+            print("   Method: \(request.httpMethod.rawValue)")
+            print("   URL: \(endpoint.absoluteString)")
+            print("   Body dictionary: \(dtoDictionary)")
+            
             var urlComponents = URLComponents()
             let queryItems = dtoDictionary.map { field in
                 URLQueryItem(
@@ -128,7 +148,10 @@ struct DefaultNetworkClient: NetworkClient {
             }
             urlComponents.queryItems = queryItems
             urlRequest.httpBody = urlComponents.query?.data(using: .utf8)
-            urlRequest.setValue("application/json", forHTTPHeaderField: "Content-Type")
+            
+            if let httpBody = urlRequest.httpBody, let bodyString = String(data: httpBody, encoding: .utf8) {
+                print("   Body string: \(bodyString)")
+            }
         }
 
         urlRequest.setValue("application/x-www-form-urlencoded", forHTTPHeaderField: "Content-Type")

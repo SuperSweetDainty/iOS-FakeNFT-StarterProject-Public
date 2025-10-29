@@ -370,7 +370,7 @@
 				0CFCB7472A7808870009A829 /* Catalog */,
 				0C79EE642A76DDCF00EE90EA /* NftDetails */,
 				3F6806C829CBBC8100B4F915 /* ProductDetails */,
-				7E1A98802EB26F7D00A4EC35 /* Profile 2 */,
+				7E1A98802EB26F7D00A4EC35 /* Profile */,
 			);
 			path = "Scenes ";
 			sourceTree = "<group>";
@@ -470,7 +470,7 @@
 			path = MyNFT;
 			sourceTree = "<group>";
 		};
-		7E1A98802EB26F7D00A4EC35 /* Profile 2 */ = {
+		7E1A98802EB26F7D00A4EC35 /* Profile */ = {
 			isa = PBXGroup;
 			children = (
 				7E1A986F2EB26F7D00A4EC35 /* Cell */,
@@ -483,7 +483,7 @@
 				7E1A987E2EB26F7D00A4EC35 /* ProfileViewController.swift */,
 				7E1A987F2EB26F7D00A4EC35 /* WebViewController.swift */,
 			);
-			path = "Profile 2";
+			path = Profile;
 			sourceTree = "<group>";
 		};
 		E19CD5A92A98B55900CA39A5 /* Cell */ = {

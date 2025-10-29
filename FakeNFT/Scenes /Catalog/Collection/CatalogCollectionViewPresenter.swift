@@ -48,6 +48,10 @@ final class CatalogCollectionViewPresenter: CatalogCollectionViewPresenterProtoc
         setupObservers()
     }
     
+    deinit {
+        NotificationCenter.default.removeObserver(self)
+    }
+    
     // MARK: - Lifecycle
     func viewDidLoad() {
         loadNFTs()
@@ -105,13 +109,19 @@ final class CatalogCollectionViewPresenter: CatalogCollectionViewPresenterProtoc
         guard let index = nftCollectionCell.firstIndex(where: { $0.id == nftId }) else { return }
         let newLikeState = !nftCollectionCell[index].isFavorite
         
+        print("📱 Catalog: Toggling like for NFT \(nftId), new state: \(newLikeState)")
+        
+        // Update UI optimistically
         nftCollectionCell[index].isFavorite = newLikeState
         view?.updateNFTLikeState(at: index, isLiked: newLikeState)
         
+        // Load current likes and update
         profileService.loadProfile { [weak self] result in
+            guard let self = self else { return }
             DispatchQueue.main.async {
                 switch result {
                 case .success(let user):
+                    print("📱 Catalog: Loaded profile with likes: \(user.likes)")
                     var updatedLikes = Set(user.likes)
                     
                     if newLikeState {
@@ -120,13 +130,18 @@ final class CatalogCollectionViewPresenter: CatalogCollectionViewPresenterProtoc
                         updatedLikes.remove(nftId)
                     }
                     
-                    self?.saveLikesToUserDefaults(Array(updatedLikes))
+                    print("📤 Catalog: Sending to server likes: \(Array(updatedLikes))")
                     
-                    self?.profileService.updateLikes(Array(updatedLikes)) { result in
+                    // Save to UserDefaults
+                    self.saveLikesToUserDefaults(Array(updatedLikes))
+                    
+                    // Update on server
+                    self.profileService.updateLikes(Array(updatedLikes)) { result in
                         DispatchQueue.main.async {
                             switch result {
-                            case .success(let updatedUser):
-                                
+                            case .success:
+                                print("✅ Catalog: Server update successful")
+                                // Broadcast notification for other screens
                                 NotificationCenter.default.post(
                                     name: .nftLikeStateChanged,
                                     object: nil,
@@ -134,17 +149,19 @@ final class CatalogCollectionViewPresenter: CatalogCollectionViewPresenterProtoc
                                 )
                                 
                             case .failure(let error):
-                                print(" Failed to update likes: \(error)")
-                                self?.nftCollectionCell[index].isFavorite = !newLikeState
-                                self?.view?.updateNFTLikeState(at: index, isLiked: !newLikeState)
+                                print("❌ Failed to update likes on server: \(error)")
+                                // Revert UI change on failure
+                                self.nftCollectionCell[index].isFavorite = !newLikeState
+                                self.view?.updateNFTLikeState(at: index, isLiked: !newLikeState)
                             }
                         }
                     }
                     
                 case .failure(let error):
-                    print("Failed to load profile: \(error)")
-                    self?.nftCollectionCell[index].isFavorite = !newLikeState
-                    self?.view?.updateNFTLikeState(at: index, isLiked: !newLikeState)
+                    print("❌ Failed to load profile: \(error)")
+                    // Revert UI change on failure
+                    self.nftCollectionCell[index].isFavorite = !newLikeState
+                    self.view?.updateNFTLikeState(at: index, isLiked: !newLikeState)
                 }
             }
         }

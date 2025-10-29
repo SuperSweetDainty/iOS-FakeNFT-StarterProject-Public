@@ -73,6 +73,18 @@ final class MyNFTPresenterImpl: MyNFTPresenter {
     
     init(servicesAssembly: ServicesAssembly) {
         self.servicesAssembly = servicesAssembly
+        
+        // Observe unified like-state changes from other screens
+        NotificationCenter.default.addObserver(
+            self,
+            selector: #selector(handleExternalLikeChange(_:)),
+            name: .nftLikeStateChanged,
+            object: nil
+        )
+    }
+    
+    deinit {
+        NotificationCenter.default.removeObserver(self)
     }
     
     // MARK: - Functions
@@ -99,11 +111,16 @@ final class MyNFTPresenterImpl: MyNFTPresenter {
     }
     
     func didToggleLike(for nftId: String, isLiked: Bool) {
+        print("📱 MyNFT: Toggling like for NFT \(nftId), new state: \(isLiked)")
+        print("   Current likes before: \(likedNFTs)")
+        
         if isLiked {
             likedNFTs.insert(nftId)
         } else {
             likedNFTs.remove(nftId)
         }
+        
+        print("   Current likes after: \(likedNFTs)")
         
         // Save locally immediately
         saveLikedNFTs()
@@ -122,11 +139,14 @@ final class MyNFTPresenterImpl: MyNFTPresenter {
         )
         
         // Sync with server
+        print("📤 MyNFT: Sending to server likes: \(Array(likedNFTs))")
         servicesAssembly.profileService.updateLikes(Array(likedNFTs)) { [weak self] result in
             switch result {
             case .success:
+                print("✅ MyNFT: Server update successful")
                 self?.postLikedNFTsNotification()
-            case .failure:
+            case .failure(let error):
+                print("❌ MyNFT: Server update failed: \(error)")
                 // If server update fails, we keep local changes
                 // Could implement retry logic or show error to user
                 break
@@ -254,6 +274,25 @@ final class MyNFTPresenterImpl: MyNFTPresenter {
     
     private func postLikedNFTsNotification() {
         NotificationCenter.default.post(name: .likedNFTsDidChange, object: nil)
+    }
+    
+    @objc private func handleExternalLikeChange(_ notification: Notification) {
+        guard
+            let userInfo = notification.userInfo,
+            let nftId = userInfo["nftId"] as? String,
+            let isLiked = userInfo["isLiked"] as? Bool
+        else { return }
+        
+        // Update local liked set
+        if isLiked {
+            likedNFTs.insert(nftId)
+        } else {
+            likedNFTs.remove(nftId)
+        }
+        saveLikedNFTs()
+        
+        // Update UI
+        view?.displayNFTs(nfts, likedNFTs: likedNFTs)
     }
     
     private func extractName(from imageURL: URL?) -> String {

@@ -62,6 +62,12 @@ final class FavoritesNFTViewController: UIViewController {
         presenter.viewDidLoad()
     }
     
+    override func viewWillAppear(_ animated: Bool) {
+        super.viewWillAppear(animated)
+        // Обновляем данные при появлении экрана, если нужно
+        // presenter.refreshData() // Можно добавить метод refresh если нужно
+    }
+    
     deinit {
         NotificationCenter.default.removeObserver(self)
     }
@@ -129,6 +135,7 @@ final class FavoritesNFTViewController: UIViewController {
     }
     
     @objc private func likedNFTsDidChange() {
+        // Обновляем только UI, так как данные уже синхронизируются через handleExternalLikeChange в presenter
         collectionView.reloadData()
     }
 }
