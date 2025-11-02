@@ -1,20 +1,14 @@
 import Foundation
 
-// MARK: - Protocol
-
 protocol NftDetailPresenter {
     func viewDidLoad()
 }
-
-// MARK: - State
 
 enum NftDetailState {
     case initial, loading, failed(Error), data(Nft)
 }
 
 final class NftDetailPresenterImpl: NftDetailPresenter {
-
-    // MARK: - Properties
 
     weak var view: NftDetailView?
     private let input: NftDetailInput
@@ -25,14 +19,10 @@ final class NftDetailPresenterImpl: NftDetailPresenter {
         }
     }
 
-    // MARK: - Init
-
     init(input: NftDetailInput, service: NftService) {
         self.input = input
         self.service = service
     }
-
-    // MARK: - Functions
 
     func viewDidLoad() {
         state = .loading
@@ -47,7 +37,7 @@ final class NftDetailPresenterImpl: NftDetailPresenter {
             loadNft()
         case .data(let nft):
             view?.hideLoading()
-            let cellModels = nft.images.map { NftDetailCellModel(url: $0) }
+                let cellModels = nft.images.map { NftDetailCellModel(url: $0) }
             view?.displayCells(cellModels)
         case .failed(let error):
             let errorModel = makeErrorModel(error)
